@@ -22,8 +22,8 @@ const randomUsername = generateRandomUsername();
 
 // Random username generator
 function generateRandomUsername() {
-    const adjectives = ['Mysterious', 'Silent', 'Shadow', 'Phantom', 'Ghost', 'Stealth', 'Hidden', 'Secret', 'Unknown', 'Anonymous'];
-    const nouns = ['User', 'Chatter', 'Person', 'Entity', 'Being', 'Soul', 'Spirit', 'Traveler', 'Wanderer', 'Observer'];
+    const adjectives = ['Mysterious', 'Silent', 'Shadow', 'Phantom', 'Ghost', 'Gay', 'Hidden', 'Secret', 'Unknown', 'Anonymous'];
+    const nouns = ['User', 'Chatter', 'Person', 'Entity', 'Being', 'Soul', 'Spirit', 'Traveler', 'fortnitecart', 'Observer'];
     const randomNum = Math.floor(Math.random() * 9999);
     
     const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -173,25 +173,31 @@ function connectToServer() {
     messageInput.disabled = false;
     sendButton.disabled = false;
     messageInput.placeholder = 'Type your message...';
-    statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail`;
     
     if (socket) {
         socket.on('connect', () => {
             console.log('✅ Connected to server');
             isConnected = true;
             statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
+            addMessage('Connected to server - messages will be shared with all users', 'System');
         });
         
         socket.on('disconnect', () => {
             console.log('❌ Disconnected from server');
             isConnected = false;
             statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Offline Mode)`;
+            addMessage('Disconnected from server - messages only local', 'System');
             // Keep chat enabled even when offline
         });
         
+        // Listen for messages from other users
         socket.on('message', (data) => {
-            console.log('📨 Received message:', data);
-            addMessage(data.message, data.sender || 'System');
+            console.log('📨 Received message from server:', data);
+            
+            // Don't show our own messages twice (they're already shown locally)
+            if (data.username !== randomUsername) {
+                addMessage(data.message, data.username);
+            }
         });
         
         socket.on('killSwitchActivated', () => {
@@ -207,27 +213,41 @@ function connectToServer() {
             statusEl.textContent = 'Gmail sign in error';
             addMessage('Sign in error: ' + error, 'System');
         });
+        
+        // Try to connect
+        socket.connect();
     } else {
         // No socket available - run in offline mode
         console.log('🔒 Running in offline mode');
         isConnected = false;
         statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Offline Mode)`;
+        addMessage('Running in offline mode - messages only local', 'System');
     }
 }
 
-// Send message
+// Send message function
 function sendMessage() {
+    if (!messageInput || !chatContainer) return;
+    
     const message = messageInput.value.trim();
     if (!message) return;
     
     console.log('📤 Sending message:', message);
+    console.log('📤 Username:', randomUsername);
     
-    // Add message to chat immediately
+    // Add message to chat immediately (local display)
     addMessage(message, randomUsername);
     
-    // Try to send to server if connected and socket exists
-    if (isConnected && socket) {
-        socket.emit('message', { message });
+    // Send message to server for broadcasting to all users
+    if (socket && socket.connected) {
+        socket.emit('message', { 
+            message: message, 
+            username: randomUsername 
+        });
+        console.log('📤 Message sent to server');
+    } else {
+        console.log('⚠️ Socket not connected, message only local');
+        addMessage('(Message sent locally - server not connected)', 'System');
     }
     
     // Clear input

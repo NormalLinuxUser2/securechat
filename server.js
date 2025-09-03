@@ -397,6 +397,86 @@ io.on('connection', (socket) => {
         }
     });
     
+    // Handle regular chat messages (for immediate chat functionality)
+    socket.on('message', async (data) => {
+        if (killSwitchActivated) return;
+        
+        try {
+            const { message, username } = data;
+            
+            if (!message || !username) {
+                socket.emit('error', 'Invalid message format');
+                return;
+            }
+            
+            console.log(`📨 Chat message from ${username}: ${message}`);
+            
+            // Store message in memory (encrypted if PGP is available)
+            const messageId = crypto.randomUUID();
+            let storedMessage;
+            
+            if (serverPublicKey && serverPrivateKey) {
+                // Encrypt message with server's public key for storage
+                try {
+                    const publicKey = await openpgp.readKey({ armoredKey: serverPublicKey });
+                    const encrypted = await openpgp.encrypt({
+                        message: await openpgp.createMessage({ text: message }),
+                        encryptionKeys: publicKey
+                    });
+                    
+                    storedMessage = {
+                        id: messageId,
+                        encryptedMessage: encrypted,
+                        plainText: message, // Keep plain text for immediate display
+                        senderId: socket.id,
+                        username: username,
+                        timestamp: new Date(),
+                        encrypted: true
+                    };
+                } catch (error) {
+                    console.error('PGP encryption failed, storing as plain text:', error);
+                    storedMessage = {
+                        id: messageId,
+                        plainText: message,
+                        senderId: socket.id,
+                        username: username,
+                        timestamp: new Date(),
+                        encrypted: false
+                    };
+                }
+            } else {
+                // No PGP keys available, store as plain text
+                storedMessage = {
+                    id: messageId,
+                    plainText: message,
+                    senderId: socket.id,
+                    username: username,
+                    timestamp: new Date(),
+                    encrypted: false
+                };
+            }
+            
+            messageHistory.set(messageId, storedMessage);
+            
+            // Broadcast message to ALL connected clients (including sender for confirmation)
+            const broadcastData = {
+                id: messageId,
+                message: message,
+                username: username,
+                senderId: socket.id,
+                timestamp: new Date(),
+                encrypted: storedMessage.encrypted
+            };
+            
+            io.emit('message', broadcastData);
+            console.log(`📤 Message broadcasted to ${activeConnections.size} clients`);
+            
+        } catch (error) {
+            console.error('Error processing chat message:', error);
+            socket.emit('error', 'Failed to process message');
+        }
+    });
+    
     // Handle disconnect
     socket.on('disconnect', () => {
         if (killSwitchActivated) return;
@@ -538,6 +618,16 @@ socket.on('encryptedMessage', async (data) => {
     } catch (error) {
         console.error('Decryption failed:', error);
         addMessageToChat('[Email - decryption failed]');
+    }
+});
+
+socket.on('message', async (data) => {
+    try {
+        const decrypted = await decryptMessage(data.encryptedMessage, clientPrivateKey);
+        addMessageToChat(decrypted);
+    } catch (error) {
+        console.error('Decryption failed:', error);
+        addMessageToChat('[Chat - decryption failed]');
     }
 });
 
