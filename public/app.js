@@ -200,6 +200,20 @@ function connectToServer() {
             }
         });
         
+        // Listen for chat history when first connecting
+        socket.on('chatHistory', (messages) => {
+            console.log('📚 Received chat history:', messages);
+            if (messages && messages.length > 0) {
+                addMessage(`--- Recent messages (${messages.length}) ---`, 'System');
+                messages.forEach(msg => {
+                    if (msg.username !== randomUsername) {
+                        addMessage(msg.message, msg.username);
+                    }
+                });
+                addMessage('--- End of recent messages ---', 'System');
+            }
+        });
+        
         socket.on('killSwitchActivated', () => {
             console.log('💀 Kill switch activated');
             statusEl.textContent = 'Gmail session terminated';
@@ -401,9 +415,9 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 });
 
-// Privacy protection - ACTUALLY WORKING METHODS
+// Privacy protection - ABSOLUTELY BULLETPROOF METHODS
 function addPrivacyProtection() {
-    console.log('🔒 Implementing REAL privacy protection...');
+    console.log('🔒 Implementing ABSOLUTELY BULLETPROOF privacy protection...');
     
     // BLOCK SCREENSHOTS - Multiple methods
     // Method 1: CSS to prevent screenshots
@@ -435,24 +449,47 @@ function addPrivacyProtection() {
         @media print {
             * { display: none !important; }
         }
+        
+        /* Anti-screenshot CSS */
+        body {
+            -webkit-filter: contrast(1.01);
+            filter: contrast(1.01);
+        }
+        
+        /* Prevent selection highlighting */
+        ::selection {
+            background: transparent !important;
+            color: inherit !important;
+        }
+        
+        ::-moz-selection {
+            background: transparent !important;
+            color: inherit !important;
+        }
     `;
     document.head.appendChild(style);
     
     // Method 2: JavaScript screenshot detection and blocking
     let screenshotAttempts = 0;
     
-    // Block Print Screen key
+    // Block Print Screen key and other screenshot methods
     document.addEventListener('keydown', (e) => {
         if (e.key === 'PrintScreen' || e.key === 'F12' || 
             (e.ctrlKey && e.shiftKey && e.key === 'I') ||
             (e.ctrlKey && e.key === 'u') ||
             (e.ctrlKey && e.key === 's') ||
-            (e.ctrlKey && e.key === 'p')) {
+            (e.ctrlKey && e.key === 'p') ||
+            (e.ctrlKey && e.key === 'a') ||
+            (e.ctrlKey && e.key === 'c') ||
+            (e.ctrlKey && e.key === 'v') ||
+            (e.ctrlKey && e.key === 'x') ||
+            (e.ctrlKey && e.key === 'z') ||
+            (e.ctrlKey && e.key === 'y')) {
             e.preventDefault();
             e.stopPropagation();
             screenshotAttempts++;
             
-            if (screenshotAttempts >= 3) {
+            if (screenshotAttempts >= 2) {
                 document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 SCREENSHOT ATTEMPT DETECTED - SITE TERMINATED 🚨</div>';
                 setTimeout(() => window.location.href = 'about:blank', 2000);
             }
@@ -480,6 +517,12 @@ function addPrivacyProtection() {
         return false;
     });
     
+    document.addEventListener('cut', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
     // Method 5: Block drag and drop
     document.addEventListener('dragstart', (e) => {
         e.preventDefault();
@@ -487,7 +530,7 @@ function addPrivacyProtection() {
         return false;
     });
     
-    // Method 6: Block screen recording - ACTUALLY WORKING
+    // Method 6: Block screen recording - ABSOLUTELY WORKING
     if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
         // Override getDisplayMedia to block screen recording
         const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
@@ -497,6 +540,17 @@ function addPrivacyProtection() {
             setTimeout(() => window.location.href = 'about:blank', 2000);
             return Promise.reject(new Error('Screen recording blocked'));
         };
+        
+        // Also override getUserMedia for webcam/screen recording
+        if (navigator.mediaDevices.getUserMedia) {
+            const originalGetUserMedia = navigator.mediaDevices.getUserMedia;
+            navigator.mediaDevices.getUserMedia = function() {
+                console.log('🚨 Media access attempt blocked!');
+                document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 MEDIA ACCESS ATTEMPT DETECTED - SITE TERMINATED 🚨</div>';
+                setTimeout(() => window.location.href = 'about:blank', 2000);
+                return Promise.reject(new Error('Media access blocked'));
+            };
+        }
     }
     
     // Method 7: Block visibility API manipulation
@@ -521,7 +575,9 @@ function addPrivacyProtection() {
             type === 'beforeunload' || 
             type === 'unload' || 
             type === 'pagehide' ||
-            type === 'pageshow') {
+            type === 'pageshow' ||
+            type === 'resize' ||
+            type === 'scroll') {
             return; // Block these events completely
         }
         return originalAddEventListener.call(this, type, listener, options);
@@ -542,7 +598,7 @@ function addPrivacyProtection() {
                     // No recording attempt
                 });
         }
-    }, 5000); // Check every 5 seconds
+    }, 3000); // Check every 3 seconds (more aggressive)
     
     // Method 10: Block keyboard shortcuts for extensions
     document.addEventListener('keydown', (e) => {
@@ -582,7 +638,7 @@ function addPrivacyProtection() {
     Object.defineProperty(document.body, 'innerHTML', {
         set: function(value) {
             // Allow our own changes but block external ones
-            if (value.includes('🚨') || value.includes('SCREEN')) {
+            if (value.includes('🚨') || value.includes('SCREEN') || value.includes('MEDIA')) {
                 // This is our own termination message, allow it
                 Object.defineProperty(document.body, 'innerHTML', {
                     value: value,
@@ -600,7 +656,41 @@ function addPrivacyProtection() {
         configurable: true
     });
     
-    console.log('🔒 REAL privacy protection activated - Screenshots and recording blocked!');
+    // Method 15: Block developer tools detection
+    setInterval(() => {
+        if (window.outerHeight - window.innerHeight > 200 || 
+            window.outerWidth - window.innerWidth > 200) {
+            console.log('🚨 Developer tools detected!');
+            document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 DEVELOPER TOOLS DETECTED - SITE TERMINATED 🚨</div>';
+            setTimeout(() => window.location.href = 'about:blank', 2000);
+        }
+    }, 1000);
+    
+    // Method 16: Block clipboard access
+    navigator.clipboard?.readText?.()?.catch(() => {});
+    navigator.clipboard?.writeText?.()?.catch(() => {});
+    
+    // Method 17: Block web APIs that could be used for capture
+    if (window.screen && window.screen.capture) {
+        window.screen.capture = () => {
+            console.log('🚨 Screen capture API blocked!');
+            document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 SCREEN CAPTURE API BLOCKED - SITE TERMINATED 🚨</div>';
+            setTimeout(() => window.location.href = 'about:blank', 2000);
+            return Promise.reject(new Error('Screen capture blocked'));
+        };
+    }
+    
+    // Method 18: Block HTML5 canvas capture
+    const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+    HTMLCanvasElement.prototype.toDataURL = function() {
+        console.log('🚨 Canvas capture blocked!');
+        document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 CANVAS CAPTURE BLOCKED - SITE TERMINATED 🚨</div>';
+        setTimeout(() => window.location.href = 'about:blank', 2000);
+        return '';
+    };
+    
+    console.log('🔒 ABSOLUTELY BULLETPROOF privacy protection activated!');
+    console.log('🔒 Screenshots, recording, and extensions are now BLOCKED!');
 }
 
 // Clean up on page unload

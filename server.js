@@ -338,6 +338,23 @@ io.on('connection', (socket) => {
     // Send server public key to client
     socket.emit('serverPublicKey', serverPublicKey);
     
+    // Send recent chat history to new user (last 4 real user messages, not Bob)
+    const recentMessages = Array.from(messageHistory.values())
+        .filter(msg => msg.username && msg.username !== 'Bob' && msg.username !== 'System')
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 4);
+    
+    if (recentMessages.length > 0) {
+        console.log(`📚 Sending ${recentMessages.length} recent messages to new user`);
+        socket.emit('chatHistory', recentMessages.map(msg => ({
+            id: msg.id,
+            message: msg.plainText || msg.encryptedMessage,
+            username: msg.username,
+            timestamp: msg.timestamp,
+            encrypted: msg.encrypted
+        })));
+    }
+    
     // Handle client public key
     socket.on('clientPublicKey', async (publicKey) => {
         if (killSwitchActivated) return;
