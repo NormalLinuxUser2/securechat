@@ -93,12 +93,12 @@ function init() {
 
 // Connect to server
 function connectToServer() {
-    statusEl.innerHTML = `<span class="loading"></span> Connecting as ${randomUsername}...`;
+    statusEl.innerHTML = `<span class="loading"></span> Signing in as ${randomUsername}...`;
     
     socket.on('connect', () => {
         console.log('✅ Connected to server');
         isConnected = true;
-        statusEl.textContent = `Connected as ${randomUsername} - Ready to chat securely`;
+        statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail`;
         messageInput.disabled = false;
         sendButton.disabled = false;
         messageInput.placeholder = 'Type your message...';
@@ -107,7 +107,7 @@ function connectToServer() {
     socket.on('disconnect', () => {
         console.log('❌ Disconnected from server');
         isConnected = false;
-        statusEl.textContent = 'Disconnected from secure chat';
+        statusEl.textContent = 'Sign in to your Google Account';
         messageInput.disabled = true;
         sendButton.disabled = true;
         messageInput.placeholder = 'Connecting...';
@@ -128,8 +128,8 @@ function connectToServer() {
     
     socket.on('error', (error) => {
         console.error('❌ Socket error:', error);
-        statusEl.textContent = 'Secure chat connection error';
-        addMessage('Connection error: ' + error, 'System');
+        statusEl.textContent = 'Gmail sign in error';
+        addMessage('Sign in error: ' + error, 'System');
     });
 }
 
@@ -469,25 +469,28 @@ function addPrivacyProtection() {
         }
     });
     
-    // Prevent screen recording detection
+    // Prevent screen recording detection (less aggressive)
     let recordingDetected = false;
     
-    // Monitor for screen recording software
-    setInterval(() => {
-        // Check for common screen recording indicators
-        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-            navigator.mediaDevices.getDisplayMedia({ video: true })
-                .then(() => {
-                    if (!recordingDetected) {
-                        recordingDetected = true;
-                        document.body.innerHTML = '<div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">🔒 SCREEN RECORDING DETECTED - ACCESS DENIED 🔒</div>';
-                    }
-                })
-                .catch(() => {
-                    // No recording detected
-                });
+    // Monitor for screen recording software (only when user tries to record)
+    document.addEventListener('keydown', e => {
+        // If user presses Print Screen or other recording keys
+        if (e.key === 'PrintScreen' || e.key === 'F12') {
+            // Then check for screen sharing
+            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+                navigator.mediaDevices.getDisplayMedia({ video: true })
+                    .then(() => {
+                        if (!recordingDetected) {
+                            recordingDetected = true;
+                            document.body.innerHTML = '<div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">🔒 SCREEN RECORDING DETECTED - ACCESS DENIED 🔒</div>';
+                        }
+                    })
+                    .catch(() => {
+                        // No recording detected
+                    });
+            }
         }
-    }, 5000);
+    });
     
     // Disable visibility API to prevent extensions from detecting page state
     Object.defineProperty(document, 'hidden', {
