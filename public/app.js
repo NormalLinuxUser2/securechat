@@ -69,6 +69,9 @@ let bobInterval;
 function init() {
     console.log('🔒 SecureChat Client Initializing...');
     
+    // Ensure kill switch modal is hidden by default
+    hideKillSwitchModal();
+    
     // Set up event listeners
     sendButton.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => {
@@ -184,13 +187,18 @@ function startBobMessages() {
 
 // Kill switch handlers
 function showKillSwitchModal() {
+    console.log('🔒 Showing kill switch modal');
     killSwitchModal.classList.remove('hidden');
     killSwitchPasscode.focus();
 }
 
 function hideKillSwitchModal() {
+    console.log('🔒 Hiding kill switch modal');
     killSwitchModal.classList.add('hidden');
     killSwitchPasscode.value = '';
+    // Reset button state
+    activateKillSwitch.textContent = 'ACTIVATE KILL SWITCH';
+    activateKillSwitch.disabled = false;
 }
 
 function activateKillSwitchHandler() {
@@ -251,7 +259,259 @@ killSwitchPasscode.addEventListener('keypress', (e) => {
 });
 
 // Initialize when page loads
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    // Add privacy protection first
+    addPrivacyProtection();
+    // Then initialize the app
+    init();
+});
+
+// Privacy protection functions
+function addPrivacyProtection() {
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // Disable keyboard shortcuts for screenshots, dev tools, etc.
+    document.addEventListener('keydown', e => {
+        // Disable F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Print Screen
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.key === 'u') ||
+            (e.ctrlKey && e.key === 's') ||
+            e.key === 'PrintScreen') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable text selection
+    document.addEventListener('selectstart', e => e.preventDefault());
+    
+    // Disable drag and drop
+    document.addEventListener('dragstart', e => e.preventDefault());
+    
+    // Disable copy/paste
+    document.addEventListener('copy', e => e.preventDefault());
+    document.addEventListener('paste', e => e.preventDefault());
+    
+    // Disable view source
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'u') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable save page
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable print
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable dev tools detection
+    setInterval(() => {
+        if (window.outerHeight - window.innerHeight > 200 || 
+            window.outerWidth - window.innerWidth > 200) {
+            document.body.innerHTML = '<div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">🔒 ACCESS DENIED 🔒</div>';
+        }
+    }, 1000);
+    
+    // Prevent screenshots and recording
+    document.addEventListener('keydown', e => {
+        // Disable Print Screen, F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S
+        if (e.key === 'PrintScreen' || 
+            e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.key === 'u') ||
+            (e.ctrlKey && e.key === 's')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Disable text selection
+    document.addEventListener('selectstart', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Disable copy/paste
+    document.addEventListener('copy', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    document.addEventListener('paste', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Disable drag and drop
+    document.addEventListener('dragstart', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Disable view source
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'u') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Disable save page
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Disable print
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Disable middle click
+    document.addEventListener('mousedown', e => {
+        if (e.button === 1) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Disable alt/meta key combinations
+    document.addEventListener('keydown', e => {
+        if (e.altKey || e.metaKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Disable extensions from reading content
+    Object.defineProperty(document, 'hidden', {
+        get: () => false,
+        configurable: false
+    });
+    
+    // Disable visibility API
+    Object.defineProperty(document, 'visibilityState', {
+        get: () => 'visible',
+        configurable: false
+    });
+    
+    // Disable page visibility change events
+    document.removeEventListener('visibilitychange', null);
+    
+    // Disable focus/blur events
+    window.removeEventListener('focus', null);
+    window.removeEventListener('blur', null);
+    
+    // Disable beforeunload events
+    window.removeEventListener('beforeunload', null);
+    
+    // Disable unload events
+    window.removeEventListener('unload', null);
+    
+    // Disable pagehide events
+    window.removeEventListener('pagehide', null);
+    
+    // Disable resize events
+    window.removeEventListener('resize', null);
+    
+    // Disable scroll events
+    window.removeEventListener('scroll', null);
+    
+    // Disable mouse events for extensions
+    document.addEventListener('mousedown', e => {
+        if (e.button === 1) { // Middle click
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable keyboard events for extensions
+    document.addEventListener('keydown', e => {
+        if (e.altKey || e.metaKey) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Prevent screen recording detection
+    let recordingDetected = false;
+    
+    // Monitor for screen recording software
+    setInterval(() => {
+        // Check for common screen recording indicators
+        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+            navigator.mediaDevices.getDisplayMedia({ video: true })
+                .then(() => {
+                    if (!recordingDetected) {
+                        recordingDetected = true;
+                        document.body.innerHTML = '<div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">🔒 SCREEN RECORDING DETECTED - ACCESS DENIED 🔒</div>';
+                    }
+                })
+                .catch(() => {
+                    // No recording detected
+                });
+        }
+    }, 5000);
+    
+    // Disable visibility API to prevent extensions from detecting page state
+    Object.defineProperty(document, 'hidden', {
+        get: () => false,
+        configurable: false,
+        writable: false
+    });
+    
+    // Disable page visibility change events
+    const originalAddEventListener = document.addEventListener;
+    document.addEventListener = function(type, listener, options) {
+        if (type === 'visibilitychange' || 
+            type === 'focus' || 
+            type === 'blur' || 
+            type === 'beforeunload' || 
+            type === 'unload' || 
+            type === 'pagehide') {
+            return; // Block these events
+        }
+        return originalAddEventListener.call(this, type, listener, options);
+    };
+    
+    console.log('🔒 Privacy protection activated');
+}
 
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {
