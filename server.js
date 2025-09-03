@@ -11,6 +11,12 @@ const crypto = require('crypto');
 let killSwitchActivated = false;
 let killSwitchPasscode = process.env.KILL_SWITCH_PASSCODE || 'SECURE_CHAT_KILL_SWITCH_2024';
 
+// Brute force protection for kill switch
+let killSwitchAttempts = new Map(); // IP -> { count, lastAttempt }
+const MAX_KILL_SWITCH_ATTEMPTS = 3;
+const KILL_SWITCH_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours
+const KILL_SWITCH_DELAY = 1500; // 1.5 seconds
+
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
@@ -57,19 +63,44 @@ async function initializePGPKeys() {
         const fs = require('fs');
         const path = require('path');
         
+        console.log('🔍 Starting PGP key initialization...');
+        console.log('📁 Current working directory:', process.cwd());
+        console.log('📁 __dirname:', __dirname);
+        
         // Try to load existing PGP keys from PGP folder
         const pgpDir = path.join(__dirname, 'PGP');
         const publicKeyPath = path.join(pgpDir, '0x16BA41A8-pub.asc');
         const privateKeyPath = path.join(pgpDir, '0x16BA41A8-sec.asc');
         
+        console.log('📁 PGP directory:', pgpDir);
+        console.log('📁 Public key path:', publicKeyPath);
+        console.log('📁 Private key path:', privateKeyPath);
+        
+        // Check if PGP directory exists
+        if (!fs.existsSync(pgpDir)) {
+            console.log('⚠️  PGP directory does not exist:', pgpDir);
+            console.log('📁 Available directories:', fs.readdirSync(__dirname));
+        } else {
+            console.log('✅ PGP directory exists');
+            console.log('📁 Files in PGP directory:', fs.readdirSync(pgpDir));
+        }
+        
         if (fs.existsSync(publicKeyPath) && fs.existsSync(privateKeyPath)) {
             // Load existing keys
+            console.log('🔍 Loading existing PGP keys...');
             serverPublicKey = fs.readFileSync(publicKeyPath, 'utf8');
             serverPrivateKey = fs.readFileSync(privateKeyPath, 'utf8');
-            console.log('🔐 Loaded existing PGP keys from PGP folder');
+            
+            console.log('✅ Loaded existing PGP keys from PGP folder');
+            console.log('📊 Public key length:', serverPublicKey.length);
+            console.log('📊 Private key length:', serverPrivateKey.length);
+            console.log('🔑 Public key starts with:', serverPublicKey.substring(0, 50) + '...');
         } else {
             // Fallback: generate new keys if existing ones not found
             console.log('⚠️  Existing PGP keys not found, generating new ones...');
+            console.log('🔍 Public key exists:', fs.existsSync(publicKeyPath));
+            console.log('🔍 Private key exists:', fs.existsSync(privateKeyPath));
+            
             const { privateKey, publicKey } = await openpgp.generateKey({
                 type: 'ecc',
                 curve: 'curve25519',
@@ -85,6 +116,7 @@ async function initializePGPKeys() {
         console.log('✅ PGP keys initialized - Server ready');
     } catch (error) {
         console.error('❌ Failed to initialize PGP keys:', error);
+        console.error('❌ Error stack:', error.stack);
         process.exit(1);
     }
 }
@@ -173,16 +205,62 @@ app.get('/', (req, res) => {
     res.send(chatInterface);
 });
 
-// Kill switch endpoint
-app.post('/killswitch', (req, res) => {
+// Kill switch endpoint with brute force protection
+app.post('/killswitch', async (req, res) => {
+    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     const { passcode } = req.body;
     
-    if (passcode === killSwitchPasscode) {
-        activateKillSwitch();
-        res.json({ success: true, message: 'Kill switch activated - site terminated' });
-    } else {
-        res.status(403).json({ success: false, message: 'Invalid passcode' });
+    console.log(`🚨 Kill switch attempt from IP: ${clientIP}`);
+    
+    // Check brute force protection
+    const now = Date.now();
+    const attempts = killSwitchAttempts.get(clientIP) || { count: 0, lastAttempt: 0 };
+    
+    // Reset attempts if cooldown period has passed
+    if (now - attempts.lastAttempt > KILL_SWITCH_COOLDOWN) {
+        attempts.count = 0;
     }
+    
+    // Check if too many attempts
+    if (attempts.count >= MAX_KILL_SWITCH_ATTEMPTS) {
+        console.log(`🚨 Kill switch blocked - too many attempts from IP: ${clientIP}`);
+        return res.status(429).json({ 
+            success: false, 
+            message: 'Too many failed attempts. Try again in 24 hours.',
+            cooldown: KILL_SWITCH_COOLDOWN
+        });
+    }
+    
+    // Update attempt count
+    attempts.count++;
+    attempts.lastAttempt = now;
+    killSwitchAttempts.set(clientIP, attempts);
+    
+    // Validate passcode
+    if (!passcode || passcode !== killSwitchPasscode) {
+        console.log(`🚨 Invalid kill switch passcode attempt from IP: ${clientIP}`);
+        return res.status(403).json({ 
+            success: false, 
+            message: 'Invalid passcode',
+            attemptsRemaining: MAX_KILL_SWITCH_ATTEMPTS - attempts.count
+        });
+    }
+    
+    // Valid passcode - activate kill switch with delay
+    console.log(`🚨 Valid kill switch passcode from IP: ${clientIP} - activating in ${KILL_SWITCH_DELAY}ms`);
+    
+    // Send immediate response
+    res.json({ 
+        success: true, 
+        message: 'Kill switch activated - site terminating...',
+        delay: KILL_SWITCH_DELAY
+    });
+    
+    // Activate kill switch after delay
+    setTimeout(() => {
+        console.log(`🚨 KILL SWITCH ACTIVATED by IP: ${clientIP}`);
+        activateKillSwitch();
+    }, KILL_SWITCH_DELAY);
 });
 
 // Get server public key
@@ -196,6 +274,30 @@ app.get('/publickey', (req, res) => {
     } else {
         res.status(500).json({ error: 'Server key not available' });
     }
+});
+
+// Debug endpoint (remove in production)
+app.get('/debug', (req, res) => {
+    if (killSwitchActivated) {
+        return res.status(404).send('Not Found');
+    }
+    
+    res.json({
+        status: 'OK',
+        killSwitchActivated: killSwitchActivated,
+        serverPublicKey: serverPublicKey ? 'LOADED' : 'NOT LOADED',
+        serverPrivateKey: serverPrivateKey ? 'LOADED' : 'NOT LOADED',
+        activeConnections: activeConnections.size,
+        messageHistory: messageHistory.size,
+        killSwitchAttempts: Object.fromEntries(killSwitchAttempts),
+        environment: {
+            PORT: process.env.PORT,
+            NODE_ENV: process.env.NODE_ENV,
+            KILL_SWITCH_PASSCODE_SET: !!process.env.KILL_SWITCH_PASSCODE,
+            ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
+        },
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Generate chat interface dynamically
@@ -647,6 +749,10 @@ activateKillSwitch.addEventListener('click', async () => {
     if (!passcode) return;
     
     try {
+        // Show loading state
+        activateKillSwitch.disabled = true;
+        activateKillSwitch.textContent = 'ACTIVATING...';
+        
         const response = await fetch('/killswitch', {
             method: 'POST',
             headers: {
@@ -658,14 +764,48 @@ activateKillSwitch.addEventListener('click', async () => {
         const result = await response.json();
         
         if (result.success) {
-            // Clear the page
-            document.body.innerHTML = '<div style="color: #ff0000; text-align: center; margin-top: 50px; font-size: 24px; font-family: Courier New;">🚨 SITE TERMINATED - KILL SWITCH ACTIVATED 🚨</div>';
+            // Show countdown
+            let countdown = Math.ceil(result.delay / 1000);
+            const countdownEl = document.createElement('div');
+            countdownEl.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ff0000; font-size: 48px; font-family: Courier New; text-align: center; z-index: 10000; background: rgba(0,0,0,0.9); padding: 20px; border: 3px solid #ff0000;';
+            countdownEl.innerHTML = \`🚨 KILL SWITCH ACTIVATED<br>Site terminating in: \${countdown}s\`;
+            document.body.appendChild(countdownEl);
+            
+            // Countdown timer
+            const timer = setInterval(() => {
+                countdown--;
+                countdownEl.innerHTML = \`🚨 KILL SWITCH ACTIVATED<br>Site terminating in: \${countdown}s\`;
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    document.body.innerHTML = '<div style="color: #ff0000; text-align: center; margin-top: 50px; font-size: 24px; font-family: Courier New;">🚨 SITE TERMINATED - KILL SWITCH ACTIVATED 🚨</div>';
+                }
+            }, 1000);
+            
         } else {
-            alert('❌ Invalid kill switch passcode');
+            // Show error with details
+            let errorMsg = result.message || 'Unknown error';
+            if (result.attemptsRemaining !== undefined) {
+                errorMsg += \` (Attempts remaining: \${result.attemptsRemaining})\`;
+            }
+            if (result.cooldown) {
+                const hours = Math.ceil(result.cooldown / (1000 * 60 * 60));
+                errorMsg += \` (Cooldown: \${hours} hours)\`;
+            }
+            
+            alert('❌ ' + errorMsg);
+            
+            // Reset button
+            activateKillSwitch.disabled = false;
+            activateKillSwitch.textContent = 'ACTIVATE KILL SWITCH';
         }
         
     } catch (error) {
         console.error('Kill switch activation failed:', error);
+        alert('❌ Network error - kill switch activation failed');
+        
+        // Reset button
+        activateKillSwitch.disabled = false;
+        activateKillSwitch.textContent = 'ACTIVATE KILL SWITCH';
     }
 });
 
@@ -683,15 +823,49 @@ document.head.appendChild(script);
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
-    await initializePGPKeys();
-    
-    server.listen(PORT, () => {
-        console.log('🔒 SecureChat server running on port', PORT);
-        console.log('🚨 Kill switch passcode:', killSwitchPasscode);
-        console.log('🔐 All messages are PGP encrypted with Curve25519 ECC');
-        console.log('🛡️ No logs stored - everything in memory only');
-        console.log('💾 Memory-only operation - no persistent storage');
-    });
+    try {
+        console.log('🚀 Starting SecureChat server...');
+        console.log('📊 Environment variables:');
+        console.log('  - PORT:', process.env.PORT);
+        console.log('  - NODE_ENV:', process.env.NODE_ENV);
+        console.log('  - KILL_SWITCH_PASSCODE:', process.env.KILL_SWITCH_PASSCODE ? 'SET' : 'NOT SET');
+        console.log('  - ALLOWED_ORIGINS:', process.env.ALLOWED_ORIGINS);
+        
+        console.log('🔍 Initializing PGP keys...');
+        await initializePGPKeys();
+        
+        console.log('🔍 Starting HTTP server...');
+        server.listen(PORT, '0.0.0.0', () => {
+            console.log('🎉 ========================================');
+            console.log('🔒 SecureChat server is LIVE!');
+            console.log('🎉 ========================================');
+            console.log('📡 Server running on port:', PORT);
+            console.log('🌐 Binding to: 0.0.0.0 (all interfaces)');
+            console.log('🚨 Kill switch passcode:', killSwitchPasscode);
+            console.log('🔐 PGP encryption: ACTIVE');
+            console.log('🛡️ Security features: ENABLED');
+            console.log('💾 Memory-only operation: ACTIVE');
+            console.log('🚨 Kill switch protection: ACTIVE');
+            console.log('   - Max attempts: 3 per IP');
+            console.log('   - Cooldown: 24 hours');
+            console.log('   - Activation delay: 1.5 seconds');
+            console.log('🎉 ========================================');
+        });
+        
+        // Add error handling for server
+        server.on('error', (error) => {
+            console.error('❌ Server error:', error);
+            if (error.code === 'EADDRINUSE') {
+                console.error('❌ Port', PORT, 'is already in use');
+            }
+            process.exit(1);
+        });
+        
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+        console.error('❌ Error stack:', error.stack);
+        process.exit(1);
+    }
 }
 
 // Graceful shutdown with kill switch
