@@ -98,22 +98,23 @@ function init() {
 function connectToServer() {
     statusEl.innerHTML = `<span class="loading"></span> Signing in as ${randomUsername}...`;
     
+    // Enable chat immediately for testing (even without server)
+    messageInput.disabled = false;
+    sendButton.disabled = false;
+    messageInput.placeholder = 'Type your message...';
+    statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail`;
+    
     socket.on('connect', () => {
         console.log('✅ Connected to server');
         isConnected = true;
-        statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail`;
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        messageInput.placeholder = 'Type your message...';
+        statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
     });
     
     socket.on('disconnect', () => {
         console.log('❌ Disconnected from server');
         isConnected = false;
-        statusEl.textContent = 'Sign in to your Google Account';
-        messageInput.disabled = true;
-        sendButton.disabled = true;
-        messageInput.placeholder = 'Connecting...';
+        statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Offline Mode)`;
+        // Keep chat enabled even when offline
     });
     
     socket.on('message', (data) => {
@@ -139,15 +140,17 @@ function connectToServer() {
 // Send message
 function sendMessage() {
     const message = messageInput.value.trim();
-    if (!message || !isConnected) return;
+    if (!message) return;
     
     console.log('📤 Sending message:', message);
     
     // Add message to chat immediately
-            addMessage(message, randomUsername);
+    addMessage(message, randomUsername);
     
-    // Send to server
-    socket.emit('message', { message });
+    // Try to send to server if connected
+    if (isConnected) {
+        socket.emit('message', { message });
+    }
     
     // Clear input
     messageInput.value = '';
@@ -175,10 +178,9 @@ function startBobMessages() {
     const getRandomInterval = () => Math.random() * 30000 + 30000; // 30-60 seconds
     
     const showBobMessage = () => {
-        if (isConnected) {
-            const randomMessage = bobMessages[Math.floor(Math.random() * bobMessages.length)];
-            addMessage(randomMessage, 'Bob');
-        }
+        // Bob works even without server connection
+        const randomMessage = bobMessages[Math.floor(Math.random() * bobMessages.length)];
+        addMessage(randomMessage, 'Bob');
         
         // Schedule next message
         bobInterval = setTimeout(showBobMessage, getRandomInterval());
