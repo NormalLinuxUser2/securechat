@@ -69,8 +69,11 @@ let bobInterval;
 function init() {
     console.log('🔒 SecureChat Client Initializing...');
     
-    // Ensure kill switch modal is hidden by default
+    // AGGRESSIVE: Force hide kill switch modal multiple times
     hideKillSwitchModal();
+    setTimeout(hideKillSwitchModal, 100);
+    setTimeout(hideKillSwitchModal, 500);
+    setTimeout(hideKillSwitchModal, 1000);
     
     // Set up event listeners
     sendButton.addEventListener('click', sendMessage);
@@ -260,6 +263,14 @@ killSwitchPasscode.addEventListener('keypress', (e) => {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // EMERGENCY: Force hide kill switch modal immediately
+    const modal = document.getElementById('killSwitchModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        console.log('🔒 Emergency modal hide applied');
+    }
+    
     // Add privacy protection first
     addPrivacyProtection();
     // Then initialize the app
@@ -512,6 +523,15 @@ function addPrivacyProtection() {
         }
         return originalAddEventListener.call(this, type, listener, options);
     };
+    
+    // Continuous modal monitoring to prevent auto-show
+    setInterval(() => {
+        const modal = document.getElementById('killSwitchModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            console.log('🔒 Modal auto-show detected - forcing hide');
+            hideKillSwitchModal();
+        }
+    }, 1000);
     
     console.log('🔒 Privacy protection activated');
 }
