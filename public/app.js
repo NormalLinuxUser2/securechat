@@ -1,22 +1,21 @@
 // SecureChat Client - Anonymous Chat with Bob's Random Dialogue
-let socket;
-try {
-    socket = io();
-} catch (error) {
+let socket = null;
+
+// Check if Socket.IO is available (only when running on a server)
+if (typeof io !== 'undefined') {
+    try {
+        socket = io();
+        console.log('🔒 Socket.IO connected');
+    } catch (error) {
+        console.log('🔒 Socket.IO error:', error);
+        socket = null;
+    }
+} else {
     console.log('🔒 Socket.IO not available - running in offline mode');
-    socket = null;
 }
 
-// DOM elements
-const statusEl = document.getElementById('status');
-const chatContainer = document.getElementById('chatContainer');
-const messageInput = document.getElementById('messageInput');
-const sendButton = document.getElementById('sendButton');
-const killSwitchBtn = document.getElementById('killSwitchBtn');
-const killSwitchModal = document.getElementById('killSwitchModal');
-const killSwitchPasscode = document.getElementById('killSwitchPasscode');
-const activateKillSwitch = document.getElementById('activateKillSwitch');
-const cancelKillSwitch = document.getElementById('cancelKillSwitch');
+// DOM elements - will be set when page loads
+let statusEl, chatContainer, messageInput, sendButton, killSwitchBtn, killSwitchModal, killSwitchPasscode, activateKillSwitch, cancelKillSwitch;
 
 // Generate random username
 const randomUsername = generateRandomUsername();
@@ -75,6 +74,12 @@ let bobInterval;
 function init() {
     console.log('🔒 SecureChat Client Initializing...');
     
+    // Debug: Check element states
+    console.log('🔍 Init check:');
+    console.log('- messageInput disabled:', messageInput.disabled);
+    console.log('- sendButton disabled:', sendButton.disabled);
+    console.log('- messageInput value:', messageInput.value);
+    
     // AGGRESSIVE: Force hide kill switch modal multiple times
     hideKillSwitchModal();
     setTimeout(hideKillSwitchModal, 100);
@@ -82,16 +87,46 @@ function init() {
     setTimeout(hideKillSwitchModal, 1000);
     
     // Set up event listeners
-    sendButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !messageInput.disabled) {
-            sendMessage();
-        }
-    });
+    console.log('🔒 Setting up event listeners...');
     
-    killSwitchBtn.addEventListener('click', showKillSwitchModal);
-    activateKillSwitch.addEventListener('click', activateKillSwitchHandler);
-    cancelKillSwitch.addEventListener('click', hideKillSwitchModal);
+    try {
+        sendButton.addEventListener('click', sendMessage);
+        console.log('✅ Send button listener added');
+    } catch (error) {
+        console.error('❌ Error adding send button listener:', error);
+    }
+    
+    try {
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !messageInput.disabled) {
+                sendMessage();
+            }
+        });
+        console.log('✅ Message input listener added');
+    } catch (error) {
+        console.error('❌ Error adding message input listener:', error);
+    }
+    
+    try {
+        killSwitchBtn.addEventListener('click', showKillSwitchModal);
+        console.log('✅ Kill switch button listener added');
+    } catch (error) {
+        console.error('❌ Error adding kill switch listener:', error);
+    }
+    
+    try {
+        activateKillSwitch.addEventListener('click', activateKillSwitchHandler);
+        console.log('✅ Activate kill switch listener added');
+    } catch (error) {
+        console.error('❌ Error adding activate kill switch listener:', error);
+    }
+    
+    try {
+        cancelKillSwitch.addEventListener('click', hideKillSwitchModal);
+        console.log('✅ Cancel kill switch listener added');
+    } catch (error) {
+        console.error('❌ Error adding cancel kill switch listener:', error);
+    }
     
     // Start Bob's random messages
     startBobMessages();
@@ -276,13 +311,37 @@ killSwitchPasscode.addEventListener('keypress', (e) => {
     }
 });
 
+// Get all DOM elements
+function getDOMElements() {
+    statusEl = document.getElementById('status');
+    chatContainer = document.getElementById('chatContainer');
+    messageInput = document.getElementById('messageInput');
+    sendButton = document.getElementById('sendButton');
+    killSwitchBtn = document.getElementById('killSwitchBtn');
+    killSwitchModal = document.getElementById('killSwitchModal');
+    killSwitchPasscode = document.getElementById('killSwitchPasscode');
+    activateKillSwitch = document.getElementById('activateKillSwitch');
+    cancelKillSwitch = document.getElementById('cancelKillSwitch');
+    
+    console.log('🔍 DOM Elements loaded:');
+    console.log('- statusEl:', !!statusEl);
+    console.log('- chatContainer:', !!chatContainer);
+    console.log('- messageInput:', !!messageInput);
+    console.log('- sendButton:', !!sendButton);
+    console.log('- killSwitchBtn:', !!killSwitchBtn);
+}
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🔒 DOM Content Loaded - Starting initialization...');
+    
+    // Get all DOM elements first
+    getDOMElements();
+    
     // EMERGENCY: Force hide kill switch modal immediately
-    const modal = document.getElementById('killSwitchModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
+    if (killSwitchModal) {
+        killSwitchModal.classList.add('hidden');
+        killSwitchModal.style.display = 'none';
         console.log('🔒 Emergency modal hide applied');
     }
     
@@ -559,3 +618,29 @@ window.addEventListener('beforeunload', () => {
 });
 
 console.log('🔒 SecureChat Client Loaded - Anonymous Chat Active');
+
+// Test basic functionality
+setTimeout(() => {
+    console.log('🧪 Testing basic functionality...');
+    console.log('🧪 Can click messageInput:', messageInput && !messageInput.disabled);
+    console.log('🧪 Can click sendButton:', sendButton && !sendButton.disabled);
+    console.log('🧪 messageInput placeholder:', messageInput ? messageInput.placeholder : 'NOT FOUND');
+    
+    // Test if we can manually enable elements
+    if (messageInput) {
+        messageInput.disabled = false;
+        messageInput.placeholder = 'Type your message...';
+        console.log('✅ Message input enabled manually');
+    }
+    
+    if (sendButton) {
+        sendButton.disabled = false;
+        console.log('✅ Send button enabled manually');
+    }
+    
+    // Test if we can add a test message
+    if (chatContainer) {
+        addMessage('Test message - chat is working!', 'System');
+        console.log('✅ Test message added successfully');
+    }
+}, 2000);
