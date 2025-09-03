@@ -27,7 +27,7 @@ function generateRandomUsername() {
     const randomNum = Math.floor(Math.random() * 9999);
     
     const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const noun = nouns[Math.floor(Math.random() * adjectives.length)];
     
     return `${adjective}${noun}${randomNum}`;
 }
@@ -70,15 +70,45 @@ const bobMessages = [
 let isConnected = false;
 let bobInterval;
 
+// Wait for DOM to load and select elements
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔒 DOM Loaded - Selecting elements...');
+    
+    // Get all DOM elements
+    statusEl = document.getElementById('status');
+    chatContainer = document.getElementById('chatContainer');
+    messageInput = document.getElementById('messageInput');
+    sendButton = document.getElementById('sendButton');
+    killSwitchBtn = document.getElementById('killSwitchBtn');
+    killSwitchModal = document.getElementById('killSwitchModal');
+    killSwitchPasscode = document.getElementById('killSwitchPasscode');
+    activateKillSwitch = document.getElementById('activateKillSwitch');
+    cancelKillSwitch = document.getElementById('cancelKillSwitch');
+    
+    console.log('🔍 Elements found:', {
+        statusEl: !!statusEl,
+        chatContainer: !!chatContainer,
+        messageInput: !!messageInput,
+        sendButton: !!sendButton,
+        killSwitchBtn: !!killSwitchBtn,
+        killSwitchModal: !!killSwitchModal,
+        activateKillSwitch: !!activateKillSwitch,
+        cancelKillSwitch: !!cancelKillSwitch
+    });
+    
+    // Initialize the app after elements are selected
+    init();
+});
+
 // Initialize the app
 function init() {
     console.log('🔒 SecureChat Client Initializing...');
     
     // Debug: Check element states
     console.log('🔍 Init check:');
-    console.log('- messageInput disabled:', messageInput.disabled);
-    console.log('- sendButton disabled:', sendButton.disabled);
-    console.log('- messageInput value:', messageInput.value);
+    console.log('- messageInput disabled:', messageInput?.disabled);
+    console.log('- sendButton disabled:', sendButton?.disabled);
+    console.log('- messageInput value:', messageInput?.value);
     
     // AGGRESSIVE: Force hide kill switch modal multiple times
     hideKillSwitchModal();
