@@ -1,5 +1,11 @@
 // SecureChat Client - Anonymous Chat with Bob's Random Dialogue
-const socket = io();
+let socket;
+try {
+    socket = io();
+} catch (error) {
+    console.log('🔒 Socket.IO not available - running in offline mode');
+    socket = null;
+}
 
 // DOM elements
 const statusEl = document.getElementById('status');
@@ -104,37 +110,44 @@ function connectToServer() {
     messageInput.placeholder = 'Type your message...';
     statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail`;
     
-    socket.on('connect', () => {
-        console.log('✅ Connected to server');
-        isConnected = true;
-        statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
-    });
-    
-    socket.on('disconnect', () => {
-        console.log('❌ Disconnected from server');
+    if (socket) {
+        socket.on('connect', () => {
+            console.log('✅ Connected to server');
+            isConnected = true;
+            statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('❌ Disconnected from server');
+            isConnected = false;
+            statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Offline Mode)`;
+            // Keep chat enabled even when offline
+        });
+        
+        socket.on('message', (data) => {
+            console.log('📨 Received message:', data);
+            addMessage(data.message, data.sender || 'System');
+        });
+        
+        socket.on('killSwitchActivated', () => {
+            console.log('💀 Kill switch activated');
+            statusEl.textContent = 'Gmail session terminated';
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            addMessage('Session terminated by user', 'System');
+        });
+        
+        socket.on('error', (error) => {
+            console.error('❌ Socket error:', error);
+            statusEl.textContent = 'Gmail sign in error';
+            addMessage('Sign in error: ' + error, 'System');
+        });
+    } else {
+        // No socket available - run in offline mode
+        console.log('🔒 Running in offline mode');
         isConnected = false;
         statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Offline Mode)`;
-        // Keep chat enabled even when offline
-    });
-    
-    socket.on('message', (data) => {
-        console.log('📨 Received message:', data);
-        addMessage(data.message, data.sender || 'System');
-    });
-    
-    socket.on('killSwitchActivated', () => {
-        console.log('💀 Kill switch activated');
-        statusEl.textContent = 'Gmail session terminated';
-        messageInput.disabled = true;
-        sendButton.disabled = true;
-        addMessage('Session terminated by user', 'System');
-    });
-    
-    socket.on('error', (error) => {
-        console.error('❌ Socket error:', error);
-        statusEl.textContent = 'Gmail sign in error';
-        addMessage('Sign in error: ' + error, 'System');
-    });
+    }
 }
 
 // Send message
@@ -147,8 +160,8 @@ function sendMessage() {
     // Add message to chat immediately
     addMessage(message, randomUsername);
     
-    // Try to send to server if connected
-    if (isConnected) {
+    // Try to send to server if connected and socket exists
+    if (isConnected && socket) {
         socket.emit('message', { message });
     }
     
