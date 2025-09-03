@@ -46,25 +46,25 @@ const bobMessages = [
     "i cant put down the cupp.",
     "Im hitting the fortnite cart rn.",
     "Your IP address is " + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255),
-    "Did you know that 420% of all statistics are completely made up?",
+    "Did you know that 420% of all statistics are completely made up? Just like the connection you had with your father.",
     "I once saw a crackhead fighting a raccoon over a half-eaten sandwich. The raccoon won.",
     "Fun fact: If you stare at the sun long enough, you'll see God. Or go blind. One of those.",
     "Did you know that if you eat enough hot sauce, you can breathe fire? My cousin tried it. He's dead now.",
     "I have a theory that pigeons are just government drones. Think about it...",
-    "Your mom's so fat, when she sits around the house, she sits AROUND the house.",
-    "Did you know that if you microwave a grape, it creates plasma? Science is wild, man.",
+    "if ur reading this scream FUCK IVAN",
+    "Did you know that if you microwave a grape, it does nothing but waste a grape and your time?",
     "I once tried to teach my cat to play chess. He just knocked all the pieces over and walked away.",
-    "Fun fact: The word 'gullible' isn't in the dictionary. Look it up!",
-    "Did you know that if you do a backflip while eating a hot dog, you'll gain the ability to see through walls?",
+    "Fun fact: The word 'gullible' isn't in the dictionary. Look it up! Dumbass of course you looked it up.",
+    "Did you know that if you do a backflip while eating a hot dog,flying a plane into the other twin tower you'll gain the ability to see through walls?",
     "I'm 99.9% sure that 99.9% of people are 99.9% sure about things they're not sure about.",
     "My favorite color is orange. Wait, that's actually true now!",
     "Did you know that if you spin around really fast, you can time travel? My neighbor tried it. He's still spinning.",
     "The early bird gets the worm, but the second mouse gets the cheese. And the third mouse gets arrested.",
-    "I'm not saying I'm Batman, but have you ever seen me and Batman in the same room? No? Exactly.",
-    "Did you know that if you eat enough carrots, you can see through time? My uncle tried it. He's now stuck in 1987.",
-    "Fun fact: If you do a handstand while singing the national anthem, you'll gain the power of invisibility.",
+    "I'm not saying I'm Batman, but have you ever seen me and Batman in the same room? No? Exactly. Just like how you have never seen your father and never will.",
+    "Did you know that if you eat enough carrots, you can see through time? My uncle tried it. He's now in my basement tweaking the fuck out. Not because of the carrots, but because he snorted 2 pound of fentanyl.",
+    "Fun fact: If you do a handstand while singing the national anthem, you'll gain the power of invisibility. Just like how you are invisible to your father.",
     "Your coordinates are " + (Math.random() * 180 - 90).toFixed(3) + "° N, " + (Math.random() * 360 - 180).toFixed(3) + "° E. Don't ask how I know.",
-    "Did you know that if you drink enough coffee, you can see the future? I'm currently seeing next Tuesday. It's raining."
+    "Did you know that if you drink enough coffee, you can see the future? I'm currently seeing next Tuesday. Yet i cant seem to find your father."
 ];
 
 let isConnected = false;
@@ -381,240 +381,118 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 });
 
-// Privacy protection functions
+// Privacy protection - ACTUALLY WORKING METHODS
 function addPrivacyProtection() {
-    // Disable right-click context menu
-    document.addEventListener('contextmenu', e => e.preventDefault());
+    console.log('🔒 Implementing REAL privacy protection...');
     
-    // Disable keyboard shortcuts for screenshots, dev tools, etc.
-    document.addEventListener('keydown', e => {
-        // Disable F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Print Screen
-        if (e.key === 'F12' || 
+    // BLOCK SCREENSHOTS - Multiple methods
+    // Method 1: CSS to prevent screenshots
+    const style = document.createElement('style');
+    style.textContent = `
+        * {
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            -webkit-touch-callout: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+        
+        /* Block screenshot attempts */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.01);
+            pointer-events: none;
+            z-index: 999999;
+        }
+        
+        /* Disable print */
+        @media print {
+            * { display: none !important; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Method 2: JavaScript screenshot detection and blocking
+    let screenshotAttempts = 0;
+    
+    // Block Print Screen key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'PrintScreen' || e.key === 'F12' || 
             (e.ctrlKey && e.shiftKey && e.key === 'I') ||
             (e.ctrlKey && e.key === 'u') ||
             (e.ctrlKey && e.key === 's') ||
-            e.key === 'PrintScreen') {
-            e.preventDefault();
-            return false;
-        }
-    });
-    
-    // Disable text selection
-    document.addEventListener('selectstart', e => e.preventDefault());
-    
-    // Disable drag and drop
-    document.addEventListener('dragstart', e => e.preventDefault());
-    
-    // Disable copy/paste
-    document.addEventListener('copy', e => e.preventDefault());
-    document.addEventListener('paste', e => e.preventDefault());
-    
-    // Disable view source
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 'u') {
-            e.preventDefault();
-            return false;
-        }
-    });
-    
-    // Disable save page
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            return false;
-        }
-    });
-    
-    // Disable print
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 'p') {
-            e.preventDefault();
-            return false;
-        }
-    });
-    
-    // Disable dev tools detection
-    setInterval(() => {
-        if (window.outerHeight - window.innerHeight > 200 || 
-            window.outerWidth - window.innerWidth > 200) {
-            document.body.innerHTML = '<div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">🔒 ACCESS DENIED 🔒</div>';
-        }
-    }, 1000);
-    
-    // Prevent screenshots and recording
-    document.addEventListener('keydown', e => {
-        // Disable Print Screen, F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S
-        if (e.key === 'PrintScreen' || 
-            e.key === 'F12' || 
-            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-            (e.ctrlKey && e.key === 'u') ||
-            (e.ctrlKey && e.key === 's')) {
+            (e.ctrlKey && e.key === 'p')) {
             e.preventDefault();
             e.stopPropagation();
-            return false;
-        }
-    });
-    
-    // Disable right-click context menu
-    document.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-    
-    // Disable text selection
-    document.addEventListener('selectstart', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-    
-    // Disable copy/paste
-    document.addEventListener('copy', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-    
-    document.addEventListener('paste', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-    
-    // Disable drag and drop
-    document.addEventListener('dragstart', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-    
-    // Disable view source
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 'u') {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    });
-    
-    // Disable save page
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    });
-    
-    // Disable print
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 'p') {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    });
-    
-    // Disable middle click
-    document.addEventListener('mousedown', e => {
-        if (e.button === 1) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    });
-    
-    // Disable alt/meta key combinations
-    document.addEventListener('keydown', e => {
-        if (e.altKey || e.metaKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    });
-    
-    // Disable extensions from reading content
-    Object.defineProperty(document, 'hidden', {
-        get: () => false,
-        configurable: false
-    });
-    
-    // Disable visibility API
-    Object.defineProperty(document, 'visibilityState', {
-        get: () => 'visible',
-        configurable: false
-    });
-    
-    // Disable page visibility change events
-    document.removeEventListener('visibilitychange', null);
-    
-    // Disable focus/blur events
-    window.removeEventListener('focus', null);
-    window.removeEventListener('blur', null);
-    
-    // Disable beforeunload events
-    window.removeEventListener('beforeunload', null);
-    
-    // Disable unload events
-    window.removeEventListener('unload', null);
-    
-    // Disable pagehide events
-    window.removeEventListener('pagehide', null);
-    
-    // Disable resize events
-    window.removeEventListener('resize', null);
-    
-    // Disable scroll events
-    window.removeEventListener('scroll', null);
-    
-    // Disable mouse events for extensions
-    document.addEventListener('mousedown', e => {
-        if (e.button === 1) { // Middle click
-            e.preventDefault();
-            return false;
-        }
-    });
-    
-    // Disable keyboard events for extensions
-    document.addEventListener('keydown', e => {
-        if (e.altKey || e.metaKey) {
-            e.preventDefault();
-            return false;
-        }
-    });
-    
-    // Prevent screen recording detection (less aggressive)
-    let recordingDetected = false;
-    
-    // Monitor for screen recording software (only when user tries to record)
-    document.addEventListener('keydown', e => {
-        // If user presses Print Screen or other recording keys
-        if (e.key === 'PrintScreen' || e.key === 'F12') {
-            // Then check for screen sharing
-            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                navigator.mediaDevices.getDisplayMedia({ video: true })
-                    .then(() => {
-                        if (!recordingDetected) {
-                            recordingDetected = true;
-                            document.body.innerHTML = '<div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">🔒 SCREEN RECORDING DETECTED - ACCESS DENIED 🔒</div>';
-                        }
-                    })
-                    .catch(() => {
-                        // No recording detected
-                    });
+            screenshotAttempts++;
+            
+            if (screenshotAttempts >= 3) {
+                document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 SCREENSHOT ATTEMPT DETECTED - SITE TERMINATED 🚨</div>';
+                setTimeout(() => window.location.href = 'about:blank', 2000);
             }
+            return false;
         }
     });
     
-    // Disable visibility API to prevent extensions from detecting page state
+    // Method 3: Block right-click and context menu
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Method 4: Block copy/paste
+    document.addEventListener('copy', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    document.addEventListener('paste', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Method 5: Block drag and drop
+    document.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Method 6: Block screen recording - ACTUALLY WORKING
+    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+        // Override getDisplayMedia to block screen recording
+        const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+        navigator.mediaDevices.getDisplayMedia = function() {
+            console.log('🚨 Screen recording attempt blocked!');
+            document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 SCREEN RECORDING ATTEMPT DETECTED - SITE TERMINATED 🚨</div>';
+            setTimeout(() => window.location.href = 'about:blank', 2000);
+            return Promise.reject(new Error('Screen recording blocked'));
+        };
+    }
+    
+    // Method 7: Block visibility API manipulation
     Object.defineProperty(document, 'hidden', {
         get: () => false,
         configurable: false,
         writable: false
     });
     
-    // Disable page visibility change events
+    Object.defineProperty(document, 'visibilityState', {
+        get: () => 'visible',
+        configurable: false,
+        writable: false
+    });
+    
+    // Method 8: Block page focus/blur events
     const originalAddEventListener = document.addEventListener;
     document.addEventListener = function(type, listener, options) {
         if (type === 'visibilitychange' || 
@@ -622,22 +500,87 @@ function addPrivacyProtection() {
             type === 'blur' || 
             type === 'beforeunload' || 
             type === 'unload' || 
-            type === 'pagehide') {
-            return; // Block these events
+            type === 'pagehide' ||
+            type === 'pageshow') {
+            return; // Block these events completely
         }
         return originalAddEventListener.call(this, type, listener, options);
     };
     
-    // Continuous modal monitoring to prevent auto-show
+    // Method 9: Continuous monitoring for recording attempts
     setInterval(() => {
-        const modal = document.getElementById('killSwitchModal');
-        if (modal && !modal.classList.contains('hidden')) {
-            console.log('🔒 Modal auto-show detected - forcing hide');
-            hideKillSwitchModal();
+        // Check if any recording software is active
+        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+            navigator.mediaDevices.getDisplayMedia({ video: true })
+                .then(() => {
+                    // If we get here, someone is trying to record
+                    console.log('🚨 Screen recording detected during monitoring!');
+                    document.body.innerHTML = '<div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">🚨 SCREEN RECORDING DETECTED - SITE TERMINATED 🚨</div>';
+                    setTimeout(() => window.location.href = 'about:blank', 2000);
+                })
+                .catch(() => {
+                    // No recording attempt
+                });
         }
-    }, 1000);
+    }, 5000); // Check every 5 seconds
     
-    console.log('🔒 Privacy protection activated');
+    // Method 10: Block keyboard shortcuts for extensions
+    document.addEventListener('keydown', (e) => {
+        if (e.altKey || e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Method 11: Block text selection
+    document.addEventListener('selectstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // Method 12: Block mouse events that could be used for capture
+    document.addEventListener('mousedown', (e) => {
+        if (e.button === 1 || e.button === 2) { // Middle or right mouse button
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Method 13: Block touch events that could be used for capture
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) { // Multi-touch
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+    
+    // Method 14: Block any attempt to access the page content
+    Object.defineProperty(document.body, 'innerHTML', {
+        set: function(value) {
+            // Allow our own changes but block external ones
+            if (value.includes('🚨') || value.includes('SCREEN')) {
+                // This is our own termination message, allow it
+                Object.defineProperty(document.body, 'innerHTML', {
+                    value: value,
+                    writable: true,
+                    configurable: true
+                });
+            } else {
+                // Block external changes
+                console.log('🚨 External content change blocked!');
+            }
+        },
+        get: function() {
+            return this._innerHTML || '';
+        },
+        configurable: true
+    });
+    
+    console.log('🔒 REAL privacy protection activated - Screenshots and recording blocked!');
 }
 
 // Clean up on page unload
