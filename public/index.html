@@ -150,8 +150,8 @@
             border: 1px solid #ff6600; 
             padding: 30px; 
             text-align: center;
-            border-radius: 8px;
-            max-width: 400px;
+            border-radius: 8px; 
+            max-width: 400px; 
             box-shadow: 0 4px 6px rgba(255,102,0,0.3);
         }
         
@@ -176,6 +176,25 @@
         .modal button {
             margin: 5px;
             padding: 10px 20px;
+        }
+        
+        /* Password modal specific styles */
+        #passwordModal {
+            z-index: 2000; /* Higher than kill switch modal */
+        }
+        
+        #passwordModal .modal-content {
+            background: #000;
+            border: 2px solid #ff6600;
+            box-shadow: 0 0 20px rgba(255,102,0,0.5);
+        }
+        
+        #passwordError {
+            background: rgba(255,0,0,0.1);
+            border: 1px solid #ff0000;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
         }
         
         .security-info {
@@ -280,6 +299,19 @@
         <div class="input-container">
             <input type="text" id="messageInput" placeholder="Enter your email address">
             <button id="sendButton">Next</button>
+        </div>
+    </div>
+    
+    <!-- Password Protection Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <h2>🔐 SITE ACCESS REQUIRED</h2>
+            <p>This site is protected by password authentication.</p>
+            <p>Enter the correct password to access Gmail:</p>
+            <input type="password" id="sitePassword" placeholder="Enter site password">
+            <br>
+            <button id="submitPassword" style="background: #ff6600; color: #000;">ACCESS SITE</button>
+            <div id="passwordError" style="color: red; margin-top: 10px; display: none;"></div>
         </div>
     </div>
     

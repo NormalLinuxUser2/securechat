@@ -14,13 +14,21 @@ if (typeof io !== 'undefined') {
     console.log('🔒 Socket.IO not available - running in offline mode');
 }
 
-// DOM elements - will be set when page loads
+// Global variables
 let statusEl, chatContainer, messageInput, sendButton, killSwitchBtn, killSwitchModal, killSwitchPasscode, activateKillSwitch, cancelKillSwitch;
+let randomUsername, bobInterval;
+
+// Password protection variables
+let passwordModal, sitePassword, submitPassword, passwordError;
+let failedAttempts = 0;
+const MAX_FAILED_ATTEMPTS = 3;
+const CORRECT_PASSWORD = 'MoneyMakingMen16$'; // Placeholder password
+const BYPASS_KEY = 'MoneyMakingMen16$';
+
+// Site access state
+let siteAccessGranted = false;
 
 // Generate random username
-const randomUsername = generateRandomUsername();
-
-// Random username generator
 function generateRandomUsername() {
     const adjectives = ['Mysterious', 'Silent', 'Shadow', 'Phantom', 'Ghost', 'Gay', 'Hidden', 'Secret', 'Unknown', 'Anonymous'];
     const nouns = ['User', 'Chatter', 'Person', 'Entity', 'Being', 'Soul', 'Spirit', 'Traveler', 'fortnitecart', 'Observer'];
@@ -30,6 +38,138 @@ function generateRandomUsername() {
     const noun = nouns[Math.floor(Math.random() * adjectives.length)];
     
     return `${adjective}${noun}${randomNum}`;
+}
+
+// Password protection functions
+function showPasswordModal() {
+    if (!passwordModal) return;
+    console.log('🔐 Showing password modal');
+    passwordModal.classList.remove('hidden');
+    if (sitePassword) sitePassword.focus();
+}
+
+function hidePasswordModal() {
+    if (!passwordModal) return;
+    console.log('🔐 Hiding password modal');
+    passwordModal.classList.add('hidden');
+    if (sitePassword) sitePassword.value = '';
+    if (passwordError) passwordError.style.display = 'none';
+}
+
+function checkPassword() {
+    if (!sitePassword) return;
+    
+    const password = sitePassword.value.trim();
+    if (!password) {
+        showPasswordError('Please enter a password');
+        return;
+    }
+    
+    console.log('🔐 Checking password...');
+    
+    if (password === CORRECT_PASSWORD || password === BYPASS_KEY) {
+        console.log('✅ Password correct - granting site access');
+        siteAccessGranted = true;
+        hidePasswordModal();
+        initializeSite();
+    } else {
+        failedAttempts++;
+        console.log(`❌ Password incorrect - attempt ${failedAttempts}/${MAX_FAILED_ATTEMPTS}`);
+        
+        if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+            console.log('🚨 Max failed attempts reached - blocking IP');
+            blockUserIP();
+        } else {
+            const remaining = MAX_FAILED_ATTEMPTS - failedAttempts;
+            showPasswordError(`Incorrect password. ${remaining} attempts remaining.`);
+        }
+    }
+}
+
+function showPasswordError(message) {
+    if (!passwordError) return;
+    passwordError.textContent = message;
+    passwordError.style.display = 'block';
+}
+
+function blockUserIP() {
+    console.log('🚨 Blocking user IP due to failed password attempts');
+    
+    // Collect user information
+    const userInfo = {
+        ip: 'Unknown', // Will be detected by server
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+        failedAttempts: failedAttempts,
+        blocked: true
+    };
+    
+    console.log('🚨 User info collected:', userInfo);
+    
+    // Show blocking message
+    document.body.innerHTML = `
+        <div style="background:black;color:red;text-align:center;padding:50px;font-size:24px;">
+            🚨 ACCESS DENIED 🚨<br><br>
+            Too many failed password attempts.<br>
+            Your IP has been blocked.<br><br>
+            Contact administrator for bypass key.<br>
+            Bypass Key: ${BYPASS_KEY}
+        </div>
+    `;
+    
+    // Store blocking info in localStorage
+    localStorage.setItem('siteBlocked', 'true');
+    localStorage.setItem('blockedInfo', JSON.stringify(userInfo));
+}
+
+function checkIfBlocked() {
+    const blocked = localStorage.getItem('siteBlocked');
+    if (blocked === 'true') {
+        console.log('🚨 User is blocked - showing bypass option');
+        showBypassOption();
+        return true;
+    }
+    return false;
+}
+
+function showBypassOption() {
+    document.body.innerHTML = `
+        <div style="background:black;color:orange;text-align:center;padding:50px;font-size:24px;">
+            🚨 ACCESS BLOCKED 🚨<br><br>
+            Enter bypass key to regain access:<br><br>
+            <input type="password" id="bypassKey" placeholder="Enter bypass key" style="background:black;color:orange;border:1px solid orange;padding:10px;margin:10px;width:300px;">
+            <br>
+            <button onclick="checkBypassKey()" style="background:orange;color:black;border:none;padding:10px;margin:10px;cursor:pointer;">UNBLOCK</button>
+        </div>
+    `;
+}
+
+function checkBypassKey() {
+    const bypassInput = document.getElementById('bypassKey');
+    if (!bypassInput) return;
+    
+    const key = bypassInput.value.trim();
+    if (key === BYPASS_KEY) {
+        console.log('✅ Bypass key correct - unblocking user');
+        localStorage.removeItem('siteBlocked');
+        localStorage.removeItem('blockedInfo');
+        location.reload();
+    } else {
+        alert('Invalid bypass key. Access remains blocked.');
+    }
+}
+
+// Make function globally accessible for HTML onclick
+window.checkBypassKey = checkBypassKey;
+
+function initializeSite() {
+    console.log('🔐 Site access granted - initializing...');
+    
+    // Generate random username
+    randomUsername = generateRandomUsername();
+    
+    // Start the app
+    init();
 }
 
 // Bob's random dialogue
@@ -68,13 +208,12 @@ const bobMessages = [
 ];
 
 let isConnected = false;
-let bobInterval;
 
 // Wait for DOM to load and select elements
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔒 DOM Loaded - Selecting elements...');
     
-    // Get all DOM elements
+    // Get all DOM elements AFTER page loads
     statusEl = document.getElementById('status');
     chatContainer = document.getElementById('chatContainer');
     messageInput = document.getElementById('messageInput');
@@ -85,19 +224,52 @@ document.addEventListener('DOMContentLoaded', function() {
     activateKillSwitch = document.getElementById('activateKillSwitch');
     cancelKillSwitch = document.getElementById('cancelKillSwitch');
     
+    // Password protection elements
+    passwordModal = document.getElementById('passwordModal');
+    sitePassword = document.getElementById('sitePassword');
+    submitPassword = document.getElementById('submitPassword');
+    passwordError = document.getElementById('passwordError');
+    
     console.log('🔍 Elements found:', {
         statusEl: !!statusEl,
         chatContainer: !!chatContainer,
         messageInput: !!messageInput,
         sendButton: !!sendButton,
         killSwitchBtn: !!killSwitchBtn,
-        killSwitchModal: !!killSwitchModal,
-        activateKillSwitch: !!activateKillSwitch,
-        cancelKillSwitch: !!cancelKillSwitch
+        passwordModal: !!passwordModal,
+        sitePassword: !!sitePassword,
+        submitPassword: !!submitPassword
     });
     
-    // Initialize the app after elements are selected
-    init();
+    // Check if user is blocked first
+    if (checkIfBlocked()) {
+        return; // Don't proceed if blocked
+    }
+    
+    // Show password modal immediately
+    showPasswordModal();
+    
+    // Set up password protection event listeners
+    if (submitPassword) {
+        submitPassword.addEventListener('click', checkPassword);
+        console.log('✅ Password submit listener added');
+    }
+    
+    if (sitePassword) {
+        sitePassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        console.log('✅ Password input listener added');
+    }
+    
+    // Clean up
+    window.addEventListener('beforeunload', () => {
+        if (bobInterval) {
+            clearTimeout(bobInterval);
+        }
+    });
 });
 
 // Initialize the app
