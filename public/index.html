@@ -216,36 +216,36 @@
     <div class="container">
         <div class="header">
             <h1>Gmail</h1>
-            <div class="status" id="status">Signing in to your Google Account...</div>
+            <div class="status" id="status">Connecting to secure chat...</div>
         </div>
         
         <div class="chat-container" id="chatContainer">
-            <div class="message">Welcome to Gmail - Your secure email is ready</div>
-            <div class="message">All messages are encrypted and secure</div>
+            <div class="message">Welcome to SecureChat - Your messages are encrypted</div>
+            <div class="message">Random usernames are generated for privacy</div>
         </div>
         
         <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Compose email..." disabled>
+            <input type="text" id="messageInput" placeholder="Type your message..." disabled>
             <button id="sendButton" disabled>Send</button>
         </div>
     </div>
     
-    <button class="kill-switch" id="killSwitchBtn">Sign Out</button>
+    <button class="kill-switch" id="killSwitchBtn">🚨 KILL SWITCH</button>
     
     <div id="killSwitchModal" class="hidden modal">
         <div class="modal-content">
-            <h2>Sign Out</h2>
-            <p>Are you sure you want to sign out?</p>
-            <p>Enter your password to confirm:</p>
-            <input type="password" id="killSwitchPasscode" placeholder="Enter your password">
+            <h2>🚨 KILL SWITCH ACTIVATION</h2>
+            <p>This will permanently terminate the site.</p>
+            <p>Enter the kill switch passcode to confirm:</p>
+            <input type="password" id="killSwitchPasscode" placeholder="Enter kill switch passcode">
             <br>
-            <button id="activateKillSwitch" style="background: #ff6600; color: #000;">Sign Out</button>
+            <button id="activateKillSwitch" style="background: #ff6600; color: #000;">ACTIVATE KILL SWITCH</button>
             <button id="cancelKillSwitch" style="background: #000; color: #ff6600; border: 1px solid #ff6600;">Cancel</button>
         </div>
     </div>
 
     <div class="security-info">
-        Gmail | Secure | Encrypted | Google Account
+        SecureChat | Encrypted | Anonymous | No Accounts
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
