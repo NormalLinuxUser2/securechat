@@ -13,7 +13,7 @@ Default passcode: `SECURE_CHAT_KILL_SWITCH_2024`
 - **No Logging**: Zero persistent logs or traces
 - **Memory Only**: All data stored in RAM, cleared on restart
 - **404 Response**: Site appears to never exist when kill switch activated
-- **No HTML Files**: Interface generated dynamically
+- **Static HTML Interface**: Clean, maintainable HTML files with orange/black theme
 - **24/7 Uptime**: Deployed on Railway cloud platform
 
 ## 🚀 Quick Deployment to Railway
@@ -102,6 +102,13 @@ securechat/
 ├── server.js              # Main server file
 ├── package.json           # Dependencies
 ├── railway.json          # Railway deployment config
+├── nixpacks.toml         # Railway build configuration
+├── public/               # Static HTML files
+│   ├── index.html        # Orange/black Gmail disguise interface
+│   └── app.js           # Client-side JavaScript with Bob's dialogue
+├── PGP/                  # PGP key files
+│   ├── 0x16BA41A8-pub.asc
+│   └── 0x16BA41A8-sec.asc
 ├── env.example           # Environment variables template
 └── README.md            # This file
 ```
@@ -147,7 +154,7 @@ This platform implements:
 - ✅ Rate limiting (50 req/15min)
 - ✅ Security headers (Helmet)
 - ✅ CORS protection
-- ✅ No HTML files (dynamic generation)
+- ✅ Static HTML interface with orange/black theme
 - ✅ 24/7 cloud hosting
 
 ## 💰 Cost

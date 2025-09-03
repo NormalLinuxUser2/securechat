@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const crypto = require('crypto');
+const path = require('path');
 
 // Kill switch state - stored in memory only
 let killSwitchActivated = false;
@@ -48,6 +49,9 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '5mb' }));
+
+// Serve static files
+app.use(express.static('public'));
 
 // In-memory storage (NO PERSISTENT DATA)
 const activeConnections = new Map();
@@ -200,9 +204,8 @@ app.get('/', (req, res) => {
         return res.status(404).send('Not Found');
     }
     
-    // Generate the chat interface dynamically (no HTML files)
-    const chatInterface = generateChatInterface();
-    res.send(chatInterface);
+    // Serve the static HTML file
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Kill switch endpoint with brute force protection
@@ -276,6 +279,14 @@ app.get('/publickey', (req, res) => {
     }
 });
 
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+    if (killSwitchActivated) {
+        return res.status(404).send('Not Found');
+    }
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Debug endpoint (remove in production)
 app.get('/debug', (req, res) => {
     if (killSwitchActivated) {
@@ -300,193 +311,7 @@ app.get('/debug', (req, res) => {
     });
 });
 
-// Generate chat interface dynamically
-function generateChatInterface() {
-    return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureChat - Fort Knox Security</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Courier New', monospace; 
-            background: #000; 
-            color: #0f0; 
-            height: 100vh;
-            overflow: hidden;
-        }
-        .container { 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-        }
-        .header { 
-            text-align: center; 
-            border-bottom: 2px solid #0f0; 
-            padding: 15px 0; 
-            margin-bottom: 10px;
-            background: #001100;
-        }
-        .header h1 { color: #00ff00; font-size: 24px; }
-        .status { 
-            text-align: center; 
-            margin: 10px 0; 
-            font-size: 12px;
-            color: #0f0;
-        }
-        .chat-container { 
-            flex: 1;
-            border: 2px solid #0f0; 
-            padding: 15px; 
-            overflow-y: auto;
-            background: #001100;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-        .message { 
-            margin: 8px 0; 
-            padding: 8px; 
-            border-left: 3px solid #0f0;
-            background: #000;
-            border-radius: 3px;
-        }
-        .input-container { 
-            display: flex; 
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        input, button { 
-            background: #000; 
-            color: #0f0; 
-            border: 2px solid #0f0; 
-            padding: 12px; 
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            border-radius: 3px;
-        }
-        input { 
-            flex: 1; 
-        }
-        input:focus, button:focus {
-            outline: none;
-            border-color: #00ff00;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        button:hover { 
-            background: #0f0; 
-            color: #000; 
-            cursor: pointer;
-        }
-        .kill-switch { 
-            position: fixed; 
-            top: 15px; 
-            right: 15px; 
-            background: #ff0000; 
-            color: #fff; 
-            border: 2px solid #ff0000; 
-            padding: 8px 15px; 
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 3px;
-        }
-        .kill-switch:hover {
-            background: #fff;
-            color: #ff0000;
-        }
-        .hidden { display: none; }
-        .modal {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.95); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 1000;
-        }
-        .modal-content {
-            background: #000; 
-            border: 3px solid #ff0000; 
-            padding: 30px; 
-            text-align: center;
-            border-radius: 5px;
-            max-width: 400px;
-        }
-        .modal h2 { color: #ff0000; margin-bottom: 20px; }
-        .modal p { color: #fff; margin-bottom: 15px; }
-        .modal input {
-            width: 100%;
-            margin: 10px 0;
-            background: #000;
-            color: #fff;
-            border: 2px solid #ff0000;
-        }
-        .modal button {
-            margin: 5px;
-            padding: 10px 20px;
-        }
-        .security-info {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            font-size: 10px;
-            color: #0f0;
-            background: #000;
-            padding: 5px;
-            border: 1px solid #0f0;
-            border-radius: 3px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🔒 SecureChat - Fort Knox Security</h1>
-            <div class="status" id="status">Initializing secure connection...</div>
-        </div>
-        
-        <div class="chat-container" id="chatContainer">
-            <div class="message">🔐 Welcome to SecureChat - All messages are PGP encrypted with Curve25519 ECC</div>
-            <div class="message">🛡️ No logs, no traces, no persistent storage - everything in memory only</div>
-        </div>
-        
-        <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Type your encrypted message..." disabled>
-            <button id="sendButton" disabled>Send Encrypted</button>
-        </div>
-    </div>
-    
-    <button class="kill-switch" id="killSwitchBtn">🚨 KILL SWITCH</button>
-    
-    <div id="killSwitchModal" class="hidden modal">
-        <div class="modal-content">
-            <h2>🚨 KILL SWITCH ACTIVATION</h2>
-            <p>⚠️ WARNING: This will permanently destroy the site</p>
-            <p>Enter passcode to activate kill switch:</p>
-            <input type="password" id="killSwitchPasscode" placeholder="Enter kill switch passcode">
-            <br>
-            <button id="activateKillSwitch" style="background: #ff0000; color: #fff;">ACTIVATE KILL SWITCH</button>
-            <button id="cancelKillSwitch" style="background: #333; color: #fff;">Cancel</button>
-        </div>
-    </div>
 
-    <div class="security-info">
-        🔒 PGP Encrypted | 🛡️ No Logs | 💾 Memory Only | 🚨 Kill Switch Ready
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/app.js"></script>
-</body>
-</html>`;
-}
 
 // Initialize Socket.IO
 const io = socketIo(server, {
@@ -623,14 +448,14 @@ async function initializeClientKeys() {
         // Send public key to server
         socket.emit('clientPublicKey', publicKey);
         
-        statusEl.textContent = '🔒 Connected - PGP Keys Generated - Ready for encrypted chat';
+        statusEl.textContent = 'Signed in to Gmail - Ready to send emails';
         messageInput.disabled = false;
         sendButton.disabled = false;
         
-        addMessageToChat('🔐 Your PGP keys have been generated and you are now connected securely', true);
+        addMessageToChat('You are now signed in to Gmail', true);
         
     } catch (error) {
-        statusEl.textContent = '❌ Failed to generate PGP keys';
+        statusEl.textContent = '❌ Failed to sign in to Gmail';
         console.error('Key generation failed:', error);
     }
 }
@@ -668,8 +493,8 @@ async function decryptMessage(encryptedMessage, privateKey) {
 function addMessageToChat(message, isOwn = false) {
     const messageEl = document.createElement('div');
     messageEl.className = 'message';
-    messageEl.style.color = isOwn ? '#00ff00' : '#0f0';
-    messageEl.textContent = \`\${isOwn ? '🔒 You: ' : '🔐 User: '}\${message}\`;
+    messageEl.style.color = isOwn ? '#4285f4' : '#333';
+    messageEl.textContent = \`\${isOwn ? 'You: ' : 'Other: '}\${message}\`;
     chatContainer.appendChild(messageEl);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
@@ -691,14 +516,14 @@ async function sendMessage() {
         messageInput.value = '';
         
     } catch (error) {
-        statusEl.textContent = '❌ Failed to encrypt message';
+        statusEl.textContent = '❌ Failed to send email';
         console.error('Encryption error:', error);
     }
 }
 
 // Socket event handlers
 socket.on('connect', () => {
-    statusEl.textContent = '🔐 Connected - Generating PGP keys...';
+    statusEl.textContent = 'Connecting to Gmail...';
     initializeClientKeys();
 });
 
@@ -712,12 +537,12 @@ socket.on('encryptedMessage', async (data) => {
         addMessageToChat(decrypted);
     } catch (error) {
         console.error('Decryption failed:', error);
-        addMessageToChat('🔒 [Encrypted message - decryption failed]');
+        addMessageToChat('[Email - decryption failed]');
     }
 });
 
 socket.on('disconnect', () => {
-    statusEl.textContent = '❌ Disconnected';
+    statusEl.textContent = '❌ Disconnected from Gmail';
     messageInput.disabled = true;
     sendButton.disabled = true;
 });

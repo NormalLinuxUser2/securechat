@@ -5,7 +5,7 @@
 ### **Step 1: Push Updated Code to GitHub**
 ```bash
 git add .
-git commit -m "Add comprehensive debugging and secure kill switch"
+git commit -m "Add orange/black theme, Bob character, and static HTML files"
 git push origin main
 ```
 
