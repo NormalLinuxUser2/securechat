@@ -18,6 +18,13 @@ if (typeof io !== 'undefined') {
 let statusEl, chatContainer, messageInput, sendButton, killSwitchBtn, killSwitchModal, killSwitchPasscode, activateKillSwitch, cancelKillSwitch;
 let randomUsername, bobInterval;
 
+// Generate random username immediately
+randomUsername = generateRandomUsername();
+console.log('👤 Random username generated on page load:', randomUsername);
+
+// Make random username globally accessible
+window.randomUsername = randomUsername;
+
 // Password protection variables
 let passwordModal, sitePassword, submitPassword, passwordError;
 let failedAttempts = 0;
@@ -973,6 +980,7 @@ async function sendMessage() {
     console.log('📤 Username:', randomUsername);
     
     // Add message to chat immediately (local display)
+    console.log('📤 Adding message with username:', randomUsername);
     addMessage(message, randomUsername);
     
     // Send message to server - TRY ENCRYPTION FIRST, FALLBACK TO PLAINTEXT

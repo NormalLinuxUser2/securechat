@@ -308,7 +308,7 @@
             <h2>🔐 SITE ACCESS REQUIRED</h2>
             <p>This site is protected by password authentication.</p>
             <p>Enter the correct password to access Gmail:</p>
-            <input type="password" id="sitePassword" placeholder="Enter site password" onkeypress="if(event.key==='Enter'){event.preventDefault();if(document.getElementById('sitePassword').value==='MoneyMakingMen16$'){document.getElementById('passwordModal').style.display='none';document.getElementById('passwordModal').classList.add('hidden');window.location.reload();}else{alert('Wrong password');document.getElementById('sitePassword').value='';}}">
+            <input type="password" id="sitePassword" placeholder="Enter site password" onkeypress="if(event.key==='Enter'){event.preventDefault();simplePasswordCheck();}">
             <br>
             <button id="submitPassword" onclick="simplePasswordCheck()" style="background: #ff6600; color: #000;">ACCESS SITE</button>
             <div id="passwordError" style="color: red; margin-top: 10px; display: none;"></div>
@@ -386,31 +386,10 @@
             });
         }
         
-        // SIMPLE: Check if user already has access
+        // DISABLED: Check if user already has access - causing modal to disappear
         function checkExistingAccess() {
-            var hasAccess = localStorage.getItem('siteAccessGranted');
-            var accessTime = localStorage.getItem('accessTime');
-            
-            if (hasAccess === 'true' && accessTime) {
-                // Check if access is still valid (within 24 hours)
-                var timeDiff = Date.now() - parseInt(accessTime);
-                var hoursDiff = timeDiff / (1000 * 60 * 60);
-                
-                if (hoursDiff < 24) {
-                    // User has valid access, hide modal
-                    var modal = document.getElementById('passwordModal');
-                    if (modal) {
-                        modal.classList.add('hidden');
-                    }
-                    console.log('✅ Valid access found - modal hidden');
-                    return true;
-                } else {
-                    // Access expired, clear it
-                    localStorage.removeItem('siteAccessGranted');
-                    localStorage.removeItem('accessTime');
-                    console.log('❌ Access expired, localStorage cleared');
-                }
-            }
+            // DISABLED - always return false to keep modal visible
+            console.log('🔒 Access check disabled - modal stays visible');
             return false;
         }
         
@@ -432,11 +411,14 @@
             
             console.log('📤 Sending message:', message);
             
-            // Add message to chat immediately
+            // Add message to chat immediately with random username
+            var username = window.randomUsername || 'AnonymousUser' + Math.floor(Math.random() * 9999);
             var messageEl = document.createElement('div');
             messageEl.className = 'message';
-            messageEl.innerHTML = '<strong>You:</strong> ' + message;
+            messageEl.innerHTML = '<strong>' + username + ':</strong> ' + message;
             chatContainer.appendChild(messageEl);
+            
+            console.log('📤 Message added with username:', username);
             
             // Scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -615,16 +597,11 @@
         
         // SIMPLE: Set up event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user already has access
-            var hasValidAccess = checkExistingAccess();
-            
-            // Show modal if user doesn't have valid access
-            if (!hasValidAccess) {
-                var modal = document.getElementById('passwordModal');
-                if (modal) {
-                    modal.classList.remove('hidden');
-                    console.log('🔒 Password modal shown - enter password to access');
-                }
+            // ALWAYS show modal on page load - no automatic hiding
+            var modal = document.getElementById('passwordModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                console.log('🔒 Password modal shown - enter password to access');
             }
             
             // ALWAYS set up event listeners - modal is always visible for security
