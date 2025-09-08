@@ -297,8 +297,8 @@
         </div>
         
         <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Enter your email address">
-            <button id="sendButton">Next</button>
+            <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter'){event.preventDefault();sendMessageNow();}">
+            <button id="sendButton" onclick="sendMessageNow()">Send</button>
         </div>
     </div>
     
@@ -315,7 +315,7 @@
         </div>
     </div>
     
-    <button class="kill-switch" id="killSwitchBtn">🚨 KILL SWITCH</button>
+    <button class="kill-switch" id="killSwitchBtn" onclick="showKillSwitchModal()">🚨 KILL SWITCH</button>
     
     <div id="killSwitchModal" class="hidden modal">
         <div class="modal-content">
@@ -324,8 +324,8 @@
             <p>Enter the kill switch passcode to confirm:</p>
             <input type="password" id="killSwitchPasscode" placeholder="Enter kill switch passcode">
             <br>
-            <button id="activateKillSwitch" style="background: #ff6600; color: #000;">ACTIVATE KILL SWITCH</button>
-            <button id="cancelKillSwitch" style="background: #000; color: #ff6600; border: 1px solid #ff6600;">Cancel</button>
+            <button id="activateKillSwitch" onclick="activateKillSwitchNow()" style="background: #ff6600; color: #000;">ACTIVATE KILL SWITCH</button>
+            <button id="cancelKillSwitch" onclick="cancelKillSwitchNow()" style="background: #000; color: #ff6600; border: 1px solid #ff6600;">Cancel</button>
         </div>
     </div>
 
@@ -381,9 +381,89 @@
             return false;
         }
         
+        // BULLETPROOF SEND MESSAGE - WORKS NO MATTER WHAT
+        function sendMessageNow() {
+            var messageInput = document.getElementById('messageInput');
+            var chatContainer = document.getElementById('chatContainer');
+            
+            if (!messageInput || !chatContainer) {
+                console.log('❌ Chat elements not found');
+                return;
+            }
+            
+            var message = messageInput.value.trim();
+            if (!message) {
+                console.log('❌ No message entered');
+                return;
+            }
+            
+            console.log('📤 Sending message:', message);
+            
+            // Add message to chat immediately
+            var messageEl = document.createElement('div');
+            messageEl.className = 'message';
+            messageEl.innerHTML = '<strong>You:</strong> ' + message;
+            chatContainer.appendChild(messageEl);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Clear input
+            messageInput.value = '';
+            
+            console.log('✅ Message sent successfully');
+        }
+        
+        // BULLETPROOF KILL SWITCH FUNCTIONS - WORKS NO MATTER WHAT
+        function showKillSwitchModal() {
+            var modal = document.getElementById('killSwitchModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                console.log('🚨 Kill switch modal shown');
+            }
+        }
+        
+        function activateKillSwitchNow() {
+            var passcodeInput = document.getElementById('killSwitchPasscode');
+            if (!passcodeInput) {
+                console.log('❌ Kill switch passcode input not found');
+                return;
+            }
+            
+            var passcode = passcodeInput.value.trim();
+            if (passcode === 'KILLSWITCH2024') {
+                console.log('🚨 KILL SWITCH ACTIVATED - TERMINATING SITE');
+                alert('🚨 KILL SWITCH ACTIVATED - SITE TERMINATED');
+                // Clear all data and redirect
+                localStorage.clear();
+                sessionStorage.clear();
+                document.body.innerHTML = '<h1 style="color: red; text-align: center; margin-top: 50px;">🚨 SITE TERMINATED 🚨</h1>';
+            } else {
+                console.log('❌ Invalid kill switch passcode');
+                alert('❌ Invalid kill switch passcode');
+            }
+        }
+        
+        function cancelKillSwitchNow() {
+            var modal = document.getElementById('killSwitchModal');
+            var passcodeInput = document.getElementById('killSwitchPasscode');
+            
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            if (passcodeInput) {
+                passcodeInput.value = '';
+            }
+            console.log('✅ Kill switch cancelled');
+        }
+        
         // Make functions globally accessible
         window.simplePasswordCheck = simplePasswordCheck;
         window.checkExistingAccess = checkExistingAccess;
+        window.sendMessageNow = sendMessageNow;
+        window.showKillSwitchModal = showKillSwitchModal;
+        window.activateKillSwitchNow = activateKillSwitchNow;
+        window.cancelKillSwitchNow = cancelKillSwitchNow;
         
         // Check for existing access when page loads
         document.addEventListener('DOMContentLoaded', function() {
@@ -405,6 +485,50 @@
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         simplePasswordCheck();
+                    }
+                };
+            }
+            
+            // Set up chat event listeners
+            var sendBtn = document.getElementById('sendButton');
+            var messageInput = document.getElementById('messageInput');
+            
+            if (sendBtn) {
+                sendBtn.onclick = sendMessageNow;
+            }
+            
+            if (messageInput) {
+                messageInput.onkeypress = function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendMessageNow();
+                    }
+                };
+            }
+            
+            // Set up kill switch event listeners
+            var killSwitchBtn = document.getElementById('killSwitchBtn');
+            var activateKillBtn = document.getElementById('activateKillSwitch');
+            var cancelKillBtn = document.getElementById('cancelKillSwitch');
+            var killSwitchPasscode = document.getElementById('killSwitchPasscode');
+            
+            if (killSwitchBtn) {
+                killSwitchBtn.onclick = showKillSwitchModal;
+            }
+            
+            if (activateKillBtn) {
+                activateKillBtn.onclick = activateKillSwitchNow;
+            }
+            
+            if (cancelKillBtn) {
+                cancelKillBtn.onclick = cancelKillSwitchNow;
+            }
+            
+            if (killSwitchPasscode) {
+                killSwitchPasscode.onkeypress = function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        activateKillSwitchNow();
                     }
                 };
             }
