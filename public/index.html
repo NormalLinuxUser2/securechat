@@ -308,9 +308,9 @@
             <h2>🔐 SITE ACCESS REQUIRED</h2>
             <p>This site is protected by password authentication.</p>
             <p>Enter the correct password to access Gmail:</p>
-            <input type="password" id="sitePassword" placeholder="Enter site password" onkeypress="if(event.key==='Enter'){event.preventDefault();checkPasswordNow();}">
+            <input type="password" id="sitePassword" placeholder="Enter site password" onkeypress="if(event.key==='Enter'){event.preventDefault();if(document.getElementById('sitePassword').value==='MoneyMakingMen16$'){document.getElementById('passwordModal').style.display='none';document.getElementById('passwordModal').classList.add('hidden');window.location.reload();}else{alert('Wrong password');document.getElementById('sitePassword').value='';}}">
             <br>
-            <button id="submitPassword" onclick="checkPasswordNow()" style="background: #ff6600; color: #000;">ACCESS SITE</button>
+            <button id="submitPassword" onclick="simplePasswordCheck()" style="background: #ff6600; color: #000;">ACCESS SITE</button>
             <div id="passwordError" style="color: red; margin-top: 10px; display: none;"></div>
         </div>
     </div>
@@ -333,6 +333,45 @@
         Gmail | Google Account | Sign In | Secure
     </div>
 
+    <script>
+        // BULLETPROOF PASSWORD CHECK - WORKS NO MATTER WHAT
+        function simplePasswordCheck() {
+            var password = document.getElementById('sitePassword').value;
+            if (password === 'MoneyMakingMen16$') {
+                document.getElementById('passwordModal').style.display = 'none';
+                document.getElementById('passwordModal').classList.add('hidden');
+                // Reload page to start the app
+                setTimeout(function() {
+                    window.location.reload();
+                }, 100);
+            } else {
+                alert('Wrong password');
+                document.getElementById('sitePassword').value = '';
+            }
+        }
+        
+        // Make function globally accessible
+        window.simplePasswordCheck = simplePasswordCheck;
+        
+        // Add event listeners when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            var submitBtn = document.getElementById('submitPassword');
+            var passwordInput = document.getElementById('sitePassword');
+            
+            if (submitBtn) {
+                submitBtn.onclick = simplePasswordCheck;
+            }
+            
+            if (passwordInput) {
+                passwordInput.onkeypress = function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        simplePasswordCheck();
+                    }
+                };
+            }
+        });
+    </script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/openpgp@5.10.0/dist/openpgp.min.js"></script>
     <script src="/app.js"></script>
