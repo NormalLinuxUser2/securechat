@@ -12,6 +12,10 @@ const path = require('path');
 let killSwitchActivated = false;
 let killSwitchPasscode = process.env.KILL_SWITCH_PASSCODE || 'SECURE_CHAT_KILL_SWITCH_2024';
 
+// Authentication state - stored in memory only
+let authenticatedUsers = new Set(); // Store authenticated user IDs
+const SITE_PASSWORD = 'MoneyMakingMen16$';
+
 // Brute force protection for kill switch
 let killSwitchAttempts = new Map(); // IP -> { count, lastAttempt }
 const MAX_KILL_SWITCH_ATTEMPTS = 3;
@@ -52,6 +56,49 @@ app.use(express.json({ limit: '5mb' }));
 
 // Serve static files
 app.use(express.static('public'));
+
+// Authentication middleware
+app.use('/api', (req, res, next) => {
+    const authToken = req.headers['x-auth-token'];
+    if (!authToken || !authenticatedUsers.has(authToken)) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    next();
+});
+
+// Authentication endpoint
+app.post('/api/authenticate', (req, res) => {
+    const { password } = req.body;
+    
+    if (password === SITE_PASSWORD) {
+        const authToken = crypto.randomBytes(32).toString('hex');
+        authenticatedUsers.add(authToken);
+        
+        console.log('✅ User authenticated successfully');
+        res.json({ 
+            success: true, 
+            authToken: authToken,
+            message: 'Authentication successful' 
+        });
+    } else {
+        console.log('❌ Authentication failed - wrong password');
+        res.status(401).json({ 
+            success: false, 
+            error: 'Invalid password' 
+        });
+    }
+});
+
+// Check authentication status
+app.get('/api/auth-status', (req, res) => {
+    const authToken = req.headers['x-auth-token'];
+    const isAuthenticated = authToken && authenticatedUsers.has(authToken);
+    
+    res.json({ 
+        authenticated: isAuthenticated,
+        message: isAuthenticated ? 'User is authenticated' : 'User not authenticated'
+    });
+});
 
 // In-memory storage (NO PERSISTENT DATA)
 const activeConnections = new Map();

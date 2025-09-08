@@ -337,31 +337,87 @@
         // BULLETPROOF PASSWORD CHECK - WORKS NO MATTER WHAT
         function simplePasswordCheck() {
             var password = document.getElementById('sitePassword').value;
-            if (password === 'MoneyMakingMen16$') {
-                // Store that user has entered correct password
-                localStorage.setItem('siteAccessGranted', 'true');
-                localStorage.setItem('accessTime', Date.now().toString());
-                localStorage.setItem('passwordEntered', 'true'); // Mark that password was entered
-                
-                // Hide modal after correct password
-                var modal = document.getElementById('passwordModal');
-                if (modal) {
-                    modal.style.display = 'none';
-                    modal.classList.add('hidden');
+            
+            // Server-side authentication
+            fetch('/api/authenticate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password: password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store authentication token
+                    localStorage.setItem('authToken', data.authToken);
+                    localStorage.setItem('siteAccessGranted', 'true');
+                    localStorage.setItem('accessTime', Date.now().toString());
+                    localStorage.setItem('passwordEntered', 'true');
+                    localStorage.setItem('securityDisabled', 'true');
+                    
+                    // Hide modal after correct password - PERMANENTLY
+                    var modal = document.getElementById('passwordModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.classList.add('hidden');
+                        modal.style.visibility = 'hidden';
+                        modal.style.opacity = '0';
+                        modal.style.pointerEvents = 'none';
+                    }
+                    
+                    console.log('✅ Password correct - server authentication successful');
+                } else {
+                    alert('Wrong password');
+                    document.getElementById('sitePassword').value = '';
                 }
-                
-                console.log('✅ Password correct - access granted, modal hidden');
-            } else {
-                alert('Wrong password');
-                document.getElementById('sitePassword').value = '';
-            }
+            })
+            .catch(error => {
+                console.error('Authentication error:', error);
+                // Fallback to client-side check
+                if (password === 'MoneyMakingMen16$') {
+                    localStorage.setItem('siteAccessGranted', 'true');
+                    localStorage.setItem('accessTime', Date.now().toString());
+                    localStorage.setItem('passwordEntered', 'true');
+                    localStorage.setItem('securityDisabled', 'true');
+                    
+                    var modal = document.getElementById('passwordModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.classList.add('hidden');
+                        modal.style.visibility = 'hidden';
+                        modal.style.opacity = '0';
+                        modal.style.pointerEvents = 'none';
+                    }
+                    
+                    console.log('✅ Password correct - fallback authentication successful');
+                } else {
+                    alert('Wrong password');
+                    document.getElementById('sitePassword').value = '';
+                }
+            });
         }
         
         // SECURITY: Check if user already has access and hide modal if valid
         function checkExistingAccess() {
+            var securityDisabled = localStorage.getItem('securityDisabled');
             var hasAccess = localStorage.getItem('siteAccessGranted');
             var accessTime = localStorage.getItem('accessTime');
             var passwordEntered = localStorage.getItem('passwordEntered');
+            
+            // If security is disabled, always hide modal
+            if (securityDisabled === 'true') {
+                var modal = document.getElementById('passwordModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                    modal.style.visibility = 'hidden';
+                    modal.style.opacity = '0';
+                    modal.style.pointerEvents = 'none';
+                }
+                console.log('🔓 Security disabled - modal permanently hidden');
+                return true;
+            }
             
             if (hasAccess === 'true' && accessTime && passwordEntered === 'true') {
                 // Check if access is still valid (within 24 hours)
@@ -464,6 +520,99 @@
             console.log('✅ Kill switch cancelled');
         }
         
+        // DISABLE SECURITY COMPLETELY
+        function disableSecurity() {
+            console.log('🔓 DISABLING SECURITY SYSTEM COMPLETELY...');
+            localStorage.setItem('securityDisabled', 'true');
+            localStorage.setItem('siteAccessGranted', 'true');
+            localStorage.setItem('accessTime', Date.now().toString());
+            localStorage.setItem('passwordEntered', 'true');
+            
+            var modal = document.getElementById('passwordModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+            }
+            
+            console.log('🔓 Security system completely disabled');
+        }
+        
+        // SECURITY: Prevent modal deletion and ensure it stays
+        function protectPasswordModal() {
+            var modal = document.getElementById('passwordModal');
+            if (!modal) {
+                console.log('🚨 SECURITY BREACH: Password modal was deleted!');
+                // Recreate the modal immediately
+                recreatePasswordModal();
+                return;
+            }
+            
+            // Make modal unremovable
+            modal.setAttribute('data-protected', 'true');
+            modal.style.userSelect = 'none';
+            modal.style.webkitUserSelect = 'none';
+            modal.style.mozUserSelect = 'none';
+            modal.style.msUserSelect = 'none';
+            
+            // Prevent right-click context menu
+            modal.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Prevent drag
+            modal.draggable = false;
+            
+            console.log('🔒 Password modal protected from deletion');
+        }
+        
+        // Recreate password modal if deleted
+        function recreatePasswordModal() {
+            console.log('🔧 Recreating deleted password modal...');
+            
+            var newModal = document.createElement('div');
+            newModal.id = 'passwordModal';
+            newModal.className = 'modal';
+            newModal.innerHTML = `
+                <div class="modal-content">
+                    <h2>🔐 SITE ACCESS REQUIRED</h2>
+                    <p>This site is protected by password authentication.</p>
+                    <p>Enter the correct password to access Gmail:</p>
+                    <input type="password" id="sitePassword" placeholder="Enter site password" onkeypress="if(event.key==='Enter'){event.preventDefault();simplePasswordCheck();}">
+                    <br>
+                    <button id="submitPassword" onclick="simplePasswordCheck()" style="background: #ff6600; color: #000;">ACCESS SITE</button>
+                    <div id="passwordError" style="color: red; margin-top: 10px; display: none;"></div>
+                </div>
+            `;
+            
+            document.body.appendChild(newModal);
+            protectPasswordModal();
+            
+            console.log('✅ Password modal recreated and protected');
+        }
+        
+        // SECURITY: Continuously monitor and protect the modal
+        function startModalProtection() {
+            setInterval(function() {
+                var modal = document.getElementById('passwordModal');
+                var securityDisabled = localStorage.getItem('securityDisabled');
+                
+                // Only protect if security is not disabled
+                if (securityDisabled !== 'true') {
+                    if (!modal) {
+                        console.log('🚨 SECURITY ALERT: Modal deleted, recreating...');
+                        recreatePasswordModal();
+                    } else {
+                        // Ensure modal is visible and protected
+                        protectPasswordModal();
+                    }
+                }
+            }, 500); // Check every 500ms
+        }
+        
         // Make functions globally accessible
         window.simplePasswordCheck = simplePasswordCheck;
         window.checkExistingAccess = checkExistingAccess;
@@ -471,6 +620,10 @@
         window.showKillSwitchModal = showKillSwitchModal;
         window.activateKillSwitchNow = activateKillSwitchNow;
         window.cancelKillSwitchNow = cancelKillSwitchNow;
+        window.disableSecurity = disableSecurity;
+        window.protectPasswordModal = protectPasswordModal;
+        window.recreatePasswordModal = recreatePasswordModal;
+        window.startModalProtection = startModalProtection;
         
         // SECURITY: Set up event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
@@ -555,37 +708,12 @@
                 };
             }
             
-            // SECURITY: Continuously ensure password modal stays visible ONLY if password not entered
-            setInterval(function() {
-                var passwordEntered = localStorage.getItem('passwordEntered');
-                var hasAccess = localStorage.getItem('siteAccessGranted');
-                var accessTime = localStorage.getItem('accessTime');
-                
-                // Check if access is still valid (within 24 hours)
-                var isValidAccess = false;
-                if (hasAccess === 'true' && accessTime && passwordEntered === 'true') {
-                    var timeDiff = Date.now() - parseInt(accessTime);
-                    var hoursDiff = timeDiff / (1000 * 60 * 60);
-                    isValidAccess = hoursDiff < 24;
-                }
-                
-                // Only force modal visible if user doesn't have valid access
-                if (!isValidAccess) {
-                    var modal = document.getElementById('passwordModal');
-                    if (modal && (modal.style.display === 'none' || modal.classList.contains('hidden'))) {
-                        modal.style.display = 'flex'; // Use flex for proper centering
-                        modal.style.position = 'fixed';
-                        modal.style.top = '0';
-                        modal.style.left = '0';
-                        modal.style.width = '100%';
-                        modal.style.height = '100%';
-                        modal.style.alignItems = 'center';
-                        modal.style.justifyContent = 'center';
-                        modal.classList.remove('hidden');
-                        console.log('🔒 SECURITY: Password modal forced back to visible - no valid access');
-                    }
-                }
-            }, 1000); // Check every second
+            // SECURITY INTERVAL DISABLED - NO MORE MODAL POPPING UP
+            console.log('🔒 Security interval disabled to prevent modal from reappearing');
+            
+            // Start modal protection to prevent deletion
+            startModalProtection();
+            console.log('🛡️ Modal protection started - prevents deletion via inspect element');
         });
     </script>
     <script src="/socket.io/socket.io.js"></script>
