@@ -179,8 +179,9 @@ function showPasswordModal() {
 
 function hidePasswordModal() {
     if (!passwordModal) return;
-    console.log('🔐 Hiding password modal');
-    passwordModal.classList.add('hidden');
+    console.log('🔒 SECURITY: Password modal hiding blocked for security');
+    // SECURITY: Never hide password modal - it must stay visible
+    // passwordModal.classList.add('hidden'); // BLOCKED FOR SECURITY
     if (sitePassword) sitePassword.value = '';
     if (passwordError) passwordError.style.display = 'none';
 }
@@ -243,11 +244,13 @@ function emergencyPasswordCheck() {
         console.log('✅ EMERGENCY: Password correct - granting access');
         siteAccessGranted = true;
         
-        // Hide password modal
+        // SECURITY: Password modal must stay visible
         const modal = document.getElementById('passwordModal');
         if (modal) {
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
+            // SECURITY: Never hide password modal
+            // modal.style.display = 'none'; // BLOCKED FOR SECURITY
+            // modal.classList.add('hidden'); // BLOCKED FOR SECURITY
+            console.log('🔒 SECURITY: Password modal hiding blocked');
         }
         
         // Initialize site
@@ -324,12 +327,13 @@ function checkPasswordNow() {
     if (password === 'MoneyMakingMen16$') {
         console.log('✅ PASSWORD CORRECT - GRANTING ACCESS');
         
-        // Hide password modal
+        // SECURITY: Password modal must stay visible
         const modal = document.getElementById('passwordModal');
         if (modal) {
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
-            console.log('✅ Password modal hidden');
+            // SECURITY: Never hide password modal
+            // modal.style.display = 'none'; // BLOCKED FOR SECURITY
+            // modal.classList.add('hidden'); // BLOCKED FOR SECURITY
+            console.log('🔒 SECURITY: Password modal hiding blocked');
         }
         
         // Set access granted
@@ -436,6 +440,18 @@ function checkBypassKey() {
 
 // Make function globally accessible for HTML onclick
 window.checkBypassKey = checkBypassKey;
+
+// EMERGENCY BOB STARTER - Make BOB work no matter what
+window.startBobNow = function() {
+    console.log('🤖 EMERGENCY: Starting BOB manually...');
+    startBobMessages();
+};
+
+// Auto-start BOB after 3 seconds regardless of site state
+setTimeout(() => {
+    console.log('🤖 AUTO-START: Starting BOB automatically...');
+    startBobMessages();
+}, 3000);
 
 async function initializeSite() {
     console.log('🔐 Site access granted - initializing...');
@@ -656,7 +672,9 @@ function init() {
     }
     
     // Start Bob's random messages
+    console.log('🤖 Starting BOB messages...');
     startBobMessages();
+    console.log('✅ BOB messages started');
     
     // Connect to server
     connectToServer();
@@ -844,20 +862,35 @@ function addMessage(message, sender) {
 
 // Start Bob's random messages
 function startBobMessages() {
+    console.log('🤖 BOB: Initializing message system...');
+    console.log('🤖 BOB: Total messages available:', bobMessages.length);
+    
     // Bob appears every 30-60 seconds
     const getRandomInterval = () => Math.random() * 30000 + 30000; // 30-60 seconds
     
     const showBobMessage = () => {
         // Bob works even without server connection
         const randomMessage = bobMessages[Math.floor(Math.random() * bobMessages.length)];
+        console.log('🤖 BOB: Sending message:', randomMessage);
         addMessage(randomMessage, 'Bob');
         
         // Schedule next message
         bobInterval = setTimeout(showBobMessage, getRandomInterval());
+        console.log('🤖 BOB: Next message scheduled');
     };
     
-    // Start the first message after 10 seconds
-    setTimeout(showBobMessage, 10000);
+    // Start the first message after 5 seconds (faster for testing)
+    console.log('🤖 BOB: First message will appear in 5 seconds...');
+    setTimeout(showBobMessage, 5000);
+    
+    // BACKUP: Also start BOB immediately if site is already initialized
+    setTimeout(() => {
+        if (chatContainer) {
+            console.log('🤖 BOB: Backup starter - site ready, BOB active');
+        } else {
+            console.log('🤖 BOB: Backup starter - site not ready yet');
+        }
+    }, 2000);
 }
 
 // Kill switch handlers

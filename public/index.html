@@ -353,7 +353,7 @@
             }
         }
         
-        // Check if user already has access
+        // SECURITY: Check if user already has access (but NEVER auto-hide modal)
         function checkExistingAccess() {
             var hasAccess = localStorage.getItem('siteAccessGranted');
             var accessTime = localStorage.getItem('accessTime');
@@ -364,18 +364,14 @@
                 var hoursDiff = timeDiff / (1000 * 60 * 60);
                 
                 if (hoursDiff < 24) {
-                    // User already has access, hide modal
-                    var modal = document.getElementById('passwordModal');
-                    if (modal) {
-                        modal.style.display = 'none';
-                        modal.classList.add('hidden');
-                    }
-                    console.log('✅ Existing access found - modal hidden');
+                    // User has valid access, but modal MUST stay visible for security
+                    console.log('✅ Valid access found in localStorage - but modal stays visible for security');
                     return true;
                 } else {
                     // Access expired, clear it
                     localStorage.removeItem('siteAccessGranted');
                     localStorage.removeItem('accessTime');
+                    console.log('❌ Access expired, localStorage cleared');
                 }
             }
             return false;
@@ -465,14 +461,20 @@
         window.activateKillSwitchNow = activateKillSwitchNow;
         window.cancelKillSwitchNow = cancelKillSwitchNow;
         
-        // Check for existing access when page loads
+        // SECURITY: Set up event listeners when page loads (modal ALWAYS visible)
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user already has access
-            if (checkExistingAccess()) {
-                return; // Don't show modal if access exists
+            // Check if user already has access (but modal stays visible)
+            checkExistingAccess();
+            
+            // SECURITY: Ensure password modal is ALWAYS visible
+            var modal = document.getElementById('passwordModal');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.remove('hidden');
+                console.log('🔒 SECURITY: Password modal forced to be visible');
             }
             
-            // Set up event listeners only if modal is shown
+            // ALWAYS set up event listeners - modal is always visible for security
             var submitBtn = document.getElementById('submitPassword');
             var passwordInput = document.getElementById('sitePassword');
             
@@ -532,6 +534,16 @@
                     }
                 };
             }
+            
+            // SECURITY: Continuously ensure password modal stays visible
+            setInterval(function() {
+                var modal = document.getElementById('passwordModal');
+                if (modal && (modal.style.display === 'none' || modal.classList.contains('hidden'))) {
+                    modal.style.display = 'block';
+                    modal.classList.remove('hidden');
+                    console.log('🔒 SECURITY: Password modal forced back to visible');
+                }
+            }, 1000); // Check every second
         });
     </script>
     <script src="/socket.io/socket.io.js"></script>
