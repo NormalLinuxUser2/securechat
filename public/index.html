@@ -334,11 +334,20 @@
     </div>
 
     <script>
+        // SET USERNAME IMMEDIATELY - BEFORE ANYTHING ELSE
+        if (!window.randomUsername) {
+            var storedUsername = localStorage.getItem('userRandomUsername');
+            if (storedUsername) {
+                window.randomUsername = storedUsername;
+            } else {
+                window.randomUsername = 'AnonymousUser' + Math.floor(Math.random() * 9999);
+                localStorage.setItem('userRandomUsername', window.randomUsername);
+            }
+        }
+        
         // SIMPLE PASSWORD CHECK - JUST WORKS
         function simplePasswordCheck() {
             var password = document.getElementById('sitePassword').value;
-            console.log('🔐 Checking password:', password);
-            console.log('🔐 Expected password: MoneyMakingMen16$');
             
             if (password === 'MoneyMakingMen16$') {
                 // Store authentication
@@ -351,20 +360,16 @@
                     modal.classList.add('hidden');
                 }
                 
-                console.log('✅ Password correct - access granted');
                 
                 // Initialize the site after successful authentication
                 if (typeof initializeSite === 'function') {
-                    console.log('🚀 Initializing site after authentication...');
                     initializeSite();
                 } else {
-                    console.log('⚠️ initializeSite function not available, trying window.initializeSite...');
                     if (typeof window.initializeSite === 'function') {
                         window.initializeSite();
                     }
                 }
             } else {
-                console.log('❌ Wrong password entered');
                 alert('Wrong password');
                 document.getElementById('sitePassword').value = '';
             }
@@ -373,7 +378,6 @@
         // DISABLED: Check if user already has access - causing modal to disappear
         function checkExistingAccess() {
             // DISABLED - always return false to keep modal visible
-            console.log('🔒 Access check disabled - modal stays visible');
             return false;
         }
         
@@ -383,85 +387,38 @@
             var chatContainer = document.getElementById('chatContainer');
             
             if (!messageInput || !chatContainer) {
-                console.log('❌ Chat elements not found');
                 return;
             }
             
             var message = messageInput.value.trim();
             if (!message) {
-                console.log('❌ No message entered');
                 return;
             }
             
-            console.log('📤 Sending message:', message);
             
             // Add message to chat immediately with consistent username
-            var username = window.randomUsername || localStorage.getItem('userRandomUsername');
-            if (!username) {
-                // Generate username only once and store it
-                username = 'AnonymousUser' + Math.floor(Math.random() * 9999);
-                window.randomUsername = username;
-                localStorage.setItem('userRandomUsername', username);
-                console.log('🎲 Generated new username:', username);
-            }
+            var username = window.randomUsername;
             var messageEl = document.createElement('div');
             messageEl.className = 'message';
             messageEl.innerHTML = '<strong>' + username + ':</strong> ' + message;
             chatContainer.appendChild(messageEl);
             
-            console.log('📤 Message added with username:', username);
             
             // Send message to server for broadcasting to other users
-            console.log('🔍 DEBUG: Checking socket connection...');
-            console.log('🔍 io available:', typeof io !== 'undefined');
-            console.log('🔍 window.socket:', window.socket);
-            console.log('🔍 socket connected:', window.socket ? window.socket.connected : 'no socket');
-            
             if (typeof io !== 'undefined' && window.socket && window.socket.connected) {
-                console.log('📡 Sending message to server for broadcasting...');
                 window.socket.emit('message', {
                     message: message,
                     username: username
                 });
-                console.log('📡 Message sent to server');
             } else {
-                console.log('⚠️ Socket not available - trying to create connection...');
-                // Try to create socket connection
-                if (typeof io !== 'undefined') {
-                    try {
-                        window.socket = io();
-                        window.socket.on('connect', function() {
-                            console.log('✅ Socket connected! Sending message...');
-                            window.socket.emit('message', {
-                                message: message,
-                                username: username
-                            });
-                        });
-                        window.socket.on('message', function(data) {
-                            console.log('📥 Received message from server:', data);
-                            if (data.username !== username) {
-                                var messageEl = document.createElement('div');
-                                messageEl.className = 'message';
-                                messageEl.innerHTML = '<strong>' + data.username + ':</strong> ' + data.message;
-                                chatContainer.appendChild(messageEl);
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
-                            }
-                        });
-                    } catch (error) {
-                        console.error('❌ Failed to create socket:', error);
-                    }
-                } else {
-                    console.log('❌ Socket.IO not available - using localStorage fallback');
-                    // Fallback: Store message in localStorage for other tabs
-                    var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-                    messages.push({
-                        message: message,
-                        username: username,
-                        timestamp: Date.now()
-                    });
-                    localStorage.setItem('chatMessages', JSON.stringify(messages));
-                    console.log('💾 Message stored in localStorage for other tabs');
-                }
+                // Fallback: Store message in localStorage for other tabs
+                var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+                messages.push({
+                    message: message,
+                    username: username,
+                    timestamp: Date.now()
+                });
+                localStorage.setItem('chatMessages', JSON.stringify(messages));
             }
             
             // Scroll to bottom
@@ -470,7 +427,6 @@
             // Clear input
             messageInput.value = '';
             
-            console.log('✅ Message sent successfully');
         }
         
         // BULLETPROOF KILL SWITCH FUNCTIONS - WORKS NO MATTER WHAT
@@ -684,21 +640,7 @@
             startSecurityProtection(); // Use the secure version
         }
         
-        // TEST FUNCTION: Check server connection
-        window.testServerConnection = function() {
-            console.log('🧪 Testing server connection...');
-            fetch('/')
-                .then(response => {
-                    console.log('✅ Server is running - status:', response.status);
-                    return response.text();
-                })
-                .then(data => {
-                    console.log('✅ Server response received');
-                })
-                .catch(error => {
-                    console.error('❌ Server not running:', error);
-                });
-        };
+        
         
         // CHECK FOR NEW MESSAGES IN LOCALSTORAGE
         function checkForNewMessages() {
@@ -715,7 +657,6 @@
                         chatContainer.appendChild(messageEl);
                         chatContainer.scrollTop = chatContainer.scrollHeight;
                         localStorage.setItem('lastMessageTime', msg.timestamp.toString());
-                        console.log('📥 New message from localStorage:', msg);
                     }
                 });
             }
@@ -738,25 +679,11 @@
         
         // SECURE: Set up event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Generate consistent username on page load
-            if (!window.randomUsername) {
-                // Check if username exists in localStorage
-                var storedUsername = localStorage.getItem('userRandomUsername');
-                if (storedUsername) {
-                    window.randomUsername = storedUsername;
-                    console.log('🎲 Using stored username:', window.randomUsername);
-                } else {
-                    window.randomUsername = 'AnonymousUser' + Math.floor(Math.random() * 9999);
-                    localStorage.setItem('userRandomUsername', window.randomUsername);
-                    console.log('🎲 Generated new consistent username:', window.randomUsername);
-                }
-            }
             
             // ALWAYS show modal on page load - no automatic hiding
             var modal = document.getElementById('passwordModal');
             if (modal) {
                 modal.classList.remove('hidden');
-                console.log('🔒 Password modal shown - enter password to access');
             }
             
             // SECURITY: Prevent inspect element bypass
