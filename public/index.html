@@ -357,7 +357,6 @@
                     // Hide modal
                     var modal = document.getElementById('passwordModal');
                     if (modal) {
-                        modal.style.display = 'none';
                         modal.classList.add('hidden');
                     }
                     
@@ -376,7 +375,6 @@
                     
                     var modal = document.getElementById('passwordModal');
                     if (modal) {
-                        modal.style.display = 'none';
                         modal.classList.add('hidden');
                     }
                     
@@ -402,7 +400,6 @@
                     // User has valid access, hide modal
                     var modal = document.getElementById('passwordModal');
                     if (modal) {
-                        modal.style.display = 'none';
                         modal.classList.add('hidden');
                     }
                     console.log('✅ Valid access found - modal hidden');
@@ -581,7 +578,7 @@
             console.log('✅ Password modal recreated and protected');
         }
         
-        // SECURE: Continuously monitor and protect the modal
+        // SIMPLE: Only protect modal from deletion, don't force visibility
         function startModalProtection() {
             setInterval(function() {
                 var modal = document.getElementById('passwordModal');
@@ -596,27 +593,12 @@
                     isValidAccess = hoursDiff < 24;
                 }
                 
-                // Only protect if no valid access
-                if (!isValidAccess) {
-                    if (!modal) {
-                        console.log('🚨 SECURITY ALERT: Modal deleted, recreating...');
-                        recreatePasswordModal();
-                    } else {
-                        // Ensure modal is visible and protected
-                        protectPasswordModal();
-                        
-                        // FORCE modal to be visible if it's hidden
-                        if (modal.style.display === 'none' || modal.classList.contains('hidden')) {
-                            modal.style.display = 'flex';
-                            modal.classList.remove('hidden');
-                            modal.style.visibility = 'visible';
-                            modal.style.opacity = '1';
-                            modal.style.pointerEvents = 'auto';
-                            console.log('🔒 FORCED modal to be visible');
-                        }
-                    }
+                // Only recreate if deleted AND no valid access
+                if (!isValidAccess && !modal) {
+                    console.log('🚨 SECURITY ALERT: Modal deleted, recreating...');
+                    recreatePasswordModal();
                 }
-            }, 500); // Check every 500ms
+            }, 1000); // Check every 1 second
         }
         
         // Make functions globally accessible
@@ -640,7 +622,6 @@
             if (!hasValidAccess) {
                 var modal = document.getElementById('passwordModal');
                 if (modal) {
-                    modal.style.display = 'flex';
                     modal.classList.remove('hidden');
                     console.log('🔒 Password modal shown - enter password to access');
                 }
@@ -711,24 +692,7 @@
             startModalProtection();
             console.log('🛡️ Modal protection started - prevents deletion via inspect element');
             
-            // SECURE: Block site access if no valid authentication after 3 seconds
-            setTimeout(function() {
-                var hasAccess = localStorage.getItem('siteAccessGranted');
-                var accessTime = localStorage.getItem('accessTime');
-                
-                // Check if access is still valid
-                var isValidAccess = false;
-                if (hasAccess === 'true' && accessTime) {
-                    var timeDiff = Date.now() - parseInt(accessTime);
-                    var hoursDiff = timeDiff / (1000 * 60 * 60);
-                    isValidAccess = hoursDiff < 24;
-                }
-                
-                if (!isValidAccess) {
-                    console.log('🚨 SECURITY: No valid authentication - blocking site access');
-                    blockSiteAccess();
-                }
-            }, 3000); // Wait 3 seconds then block if no auth
+            // SIMPLE: No automatic site blocking - let user enter password normally
         });
     </script>
     <script src="/socket.io/socket.io.js"></script>

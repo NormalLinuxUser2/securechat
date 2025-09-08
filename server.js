@@ -535,10 +535,25 @@ io.on('connection', (socket) => {
         }
     });
     
-    // SECURITY: Only encrypted messages allowed - no plain text fallback
+    // Accept plain text messages (fallback mode)
     socket.on('message', (data) => {
-        console.log('🚨 SECURITY VIOLATION: Plain text message rejected');
-        socket.emit('error', 'SECURITY: Only encrypted messages allowed. Please enable encryption.');
+        console.log('📥 Plain text message received:', data);
+        
+        // Store message in chat history
+        chatHistory.push({
+            message: data.message,
+            username: data.username,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Keep only last 50 messages
+        if (chatHistory.length > 50) {
+            chatHistory = chatHistory.slice(-50);
+        }
+        
+        // Broadcast to all other clients
+        socket.broadcast.emit('message', data);
+        console.log('📤 Plain text message broadcasted to other users');
     });
     
     // Handle disconnect
