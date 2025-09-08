@@ -544,8 +544,8 @@
             console.log('✅ Password modal recreated and protected');
         }
         
-        // SIMPLE: Only protect modal from deletion, don't force visibility
-        function startModalProtection() {
+        // SECURE: Prevent inspect element bypass and modal deletion
+        function startSecurityProtection() {
             setInterval(function() {
                 var modal = document.getElementById('passwordModal');
                 var hasAccess = localStorage.getItem('siteAccessGranted');
@@ -559,12 +559,39 @@
                     isValidAccess = hoursDiff < 24;
                 }
                 
-                // Only recreate if deleted AND no valid access
-                if (!isValidAccess && !modal) {
-                    console.log('🚨 SECURITY ALERT: Modal deleted, recreating...');
-                    recreatePasswordModal();
+                // SECURITY: If no valid access, ensure modal is visible and protected
+                if (!isValidAccess) {
+                    if (!modal) {
+                        console.log('🚨 SECURITY BREACH: Modal deleted, recreating...');
+                        recreatePasswordModal();
+                    } else {
+                        // FORCE modal to be visible and protected
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'flex';
+                        modal.style.visibility = 'visible';
+                        modal.style.opacity = '1';
+                        modal.style.pointerEvents = 'auto';
+                        modal.style.zIndex = '999999';
+                        
+                        // Hide all other content
+                        var allElements = document.querySelectorAll('*');
+                        allElements.forEach(function(element) {
+                            if (element.id !== 'passwordModal' && !element.closest('#passwordModal')) {
+                                if (element.tagName !== 'SCRIPT' && element.tagName !== 'STYLE') {
+                                    element.style.display = 'none';
+                                }
+                            }
+                        });
+                        
+                        console.log('🔒 SECURITY: Modal forced visible, site blocked');
+                    }
                 }
-            }, 1000); // Check every 1 second
+            }, 100); // Check every 100ms for maximum security
+        }
+        
+        // SIMPLE: Only protect modal from deletion, don't force visibility
+        function startModalProtection() {
+            startSecurityProtection(); // Use the secure version
         }
         
         // Make functions globally accessible
@@ -579,7 +606,7 @@
         window.recreatePasswordModal = recreatePasswordModal;
         window.startModalProtection = startModalProtection;
         
-        // SIMPLE: Set up event listeners when page loads
+        // SECURE: Set up event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // ALWAYS show modal on page load - no automatic hiding
             var modal = document.getElementById('passwordModal');
@@ -587,6 +614,9 @@
                 modal.classList.remove('hidden');
                 console.log('🔒 Password modal shown - enter password to access');
             }
+            
+            // SECURITY: Prevent inspect element bypass
+            startSecurityProtection();
             
             // ALWAYS set up event listeners - modal is always visible for security
             var submitBtn = document.getElementById('submitPassword');

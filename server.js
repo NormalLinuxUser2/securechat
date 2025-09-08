@@ -517,8 +517,8 @@ io.on('connection', (socket) => {
                 
                 console.log(`📤 ENCRYPTED MESSAGE FORWARDED - Server cannot read content`);
             } else {
-                // Broadcast to all other clients (excluding sender)
-                socket.broadcast.emit('encryptedMessage', {
+                // Broadcast to ALL clients (including sender for confirmation)
+                io.emit('encryptedMessage', {
                     id: messageId,
                     encryptedMessage, // Forward encrypted data unchanged
                     senderId: socket.id,
@@ -551,9 +551,9 @@ io.on('connection', (socket) => {
             chatHistory = chatHistory.slice(-50);
         }
         
-        // Broadcast to all other clients
-        socket.broadcast.emit('message', data);
-        console.log('📤 Plain text message broadcasted to other users');
+        // Broadcast to ALL clients (including sender for confirmation)
+        io.emit('message', data);
+        console.log('📤 Plain text message broadcasted to ALL users');
     });
     
     // Handle disconnect

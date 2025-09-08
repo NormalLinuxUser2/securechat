@@ -45,14 +45,16 @@ let peerPublicKeys = new Map(); // Store peer public keys for direct encryption
 
 // Generate random username
 function generateRandomUsername() {
-    const adjectives = ['Mysterious', 'Silent', 'Shadow', 'Phantom', 'Ghost', 'Gay', 'Hidden', 'Secret', 'Unknown', 'Anonymous'];
-    const nouns = ['User', 'Chatter', 'Person', 'Entity', 'Being', 'Soul', 'Spirit', 'Traveler', 'fortnitecart', 'Observer'];
-    const randomNum = Math.floor(Math.random() * 9999);
+    const adjectives = ['Mysterious', 'Silent', 'Shadow', 'Phantom', 'Ghost', 'Hidden', 'Secret', 'Unknown', 'Anonymous', 'Stealth', 'Dark', 'Cryptic', 'Elusive', 'Enigmatic', 'Covert'];
+    const nouns = ['User', 'Chatter', 'Person', 'Entity', 'Being', 'Soul', 'Spirit', 'Traveler', 'Observer', 'Agent', 'Hunter', 'Warrior', 'Guardian', 'Explorer', 'Wanderer'];
+    const randomNum = Math.floor(Math.random() * 99999) + 1000; // 4-5 digit number
     
     const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)]; // Fixed: was using adjectives.length
     
-    return `${adjective}${noun}${randomNum}`;
+    const username = `${adjective}${noun}${randomNum}`;
+    console.log('🎲 Generated random username:', username);
+    return username;
 }
 
 // PGP Encryption Functions
@@ -1053,8 +1055,8 @@ function startBobMessages() {
     console.log('🤖 BOB: Initializing message system...');
     console.log('🤖 BOB: Total messages available:', bobMessages.length);
     
-    // Bob appears every 30-60 seconds
-    const getRandomInterval = () => Math.random() * 30000 + 30000; // 30-60 seconds
+    // Bob appears every 10-20 seconds (faster for testing)
+    const getRandomInterval = () => Math.random() * 10000 + 10000; // 10-20 seconds
     
     const showBobMessage = () => {
         // Bob works even without server connection
@@ -1067,9 +1069,9 @@ function startBobMessages() {
         console.log('🤖 BOB: Next message scheduled');
     };
     
-    // Start the first message after 2 seconds (much faster for testing)
-    console.log('🤖 BOB: First message will appear in 2 seconds...');
-    setTimeout(showBobMessage, 2000);
+    // Start the first message after 3 seconds
+    console.log('🤖 BOB: First message will appear in 3 seconds...');
+    setTimeout(showBobMessage, 3000);
     
     // BACKUP: Also start BOB immediately if site is already initialized
     setTimeout(() => {
