@@ -444,6 +444,7 @@ window.forceStartSite = forceStartSite;
 window.startBobNow = startBobNow;
 window.testConnection = testConnection;
 window.simulateOtherUsers = simulateOtherUsers;
+window.bypassPassword = bypassPassword;
 
 // EMERGENCY BOB STARTER - Make BOB work no matter what
 window.startBobNow = function() {
@@ -455,6 +456,20 @@ window.startBobNow = function() {
 window.forceStartSite = function() {
     console.log('🚀 EMERGENCY: Force starting site...');
     siteAccessGranted = true;
+    
+    // Force hide password modal
+    var modal = document.getElementById('passwordModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        console.log('🔒 Password modal force hidden');
+    }
+    
+    // Set localStorage to prevent modal from reappearing
+    localStorage.setItem('siteAccessGranted', 'true');
+    localStorage.setItem('accessTime', Date.now().toString());
+    localStorage.setItem('passwordEntered', 'true');
+    
     initializeSite();
 };
 
@@ -503,6 +518,25 @@ window.simulateOtherUsers = function() {
                 console.log(`👤 Simulated message from ${user}: ${message}`);
             }, index * 2000);
         });
+    }
+};
+
+// BYPASS PASSWORD SYSTEM COMPLETELY
+window.bypassPassword = function() {
+    console.log('🔓 BYPASSING PASSWORD SYSTEM...');
+    
+    // Clear all password-related localStorage
+    localStorage.removeItem('siteAccessGranted');
+    localStorage.removeItem('accessTime');
+    localStorage.removeItem('passwordEntered');
+    
+    // Force start site
+    forceStartSite();
+    
+    // Add bypass message
+    if (chatContainer) {
+        addMessage('🔓 PASSWORD SYSTEM BYPASSED - Full access granted', 'System');
+        addMessage('⚠️ This is for testing only - security disabled', 'System');
     }
 };
 

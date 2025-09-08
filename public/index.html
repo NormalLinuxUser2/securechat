@@ -561,8 +561,16 @@
                 var hasAccess = localStorage.getItem('siteAccessGranted');
                 var accessTime = localStorage.getItem('accessTime');
                 
-                // Only force modal visible if user hasn't entered correct password
-                if (passwordEntered !== 'true' || hasAccess !== 'true') {
+                // Check if access is still valid (within 24 hours)
+                var isValidAccess = false;
+                if (hasAccess === 'true' && accessTime && passwordEntered === 'true') {
+                    var timeDiff = Date.now() - parseInt(accessTime);
+                    var hoursDiff = timeDiff / (1000 * 60 * 60);
+                    isValidAccess = hoursDiff < 24;
+                }
+                
+                // Only force modal visible if user doesn't have valid access
+                if (!isValidAccess) {
                     var modal = document.getElementById('passwordModal');
                     if (modal && (modal.style.display === 'none' || modal.classList.contains('hidden'))) {
                         modal.style.display = 'flex'; // Use flex for proper centering
