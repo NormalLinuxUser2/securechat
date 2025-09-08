@@ -647,15 +647,19 @@
             var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
             var lastMessageTime = localStorage.getItem('lastMessageTime') || '0';
             var chatContainer = document.getElementById('chatContainer');
+            var currentUsername = window.randomUsername;
             
             if (chatContainer && messages.length > 0) {
                 messages.forEach(function(msg) {
                     if (msg.timestamp > parseInt(lastMessageTime)) {
-                        var messageEl = document.createElement('div');
-                        messageEl.className = 'message';
-                        messageEl.innerHTML = '<strong>' + msg.username + ':</strong> ' + msg.message;
-                        chatContainer.appendChild(messageEl);
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        // Only show messages from OTHER users, not yourself
+                        if (msg.username !== currentUsername) {
+                            var messageEl = document.createElement('div');
+                            messageEl.className = 'message';
+                            messageEl.innerHTML = '<strong>' + msg.username + ':</strong> ' + msg.message;
+                            chatContainer.appendChild(messageEl);
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }
                         localStorage.setItem('lastMessageTime', msg.timestamp.toString());
                     }
                 });
