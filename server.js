@@ -539,17 +539,18 @@ io.on('connection', (socket) => {
     socket.on('message', (data) => {
         console.log('📥 Plain text message received:', data);
         
-        // Store message in chat history
+        // Store message in chat history with expiration
         chatHistory.push({
             message: data.message,
             username: data.username,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            expires: Date.now() + 60000 // Expires in 1 minute
         });
         
-        // Keep only last 50 messages
-        if (chatHistory.length > 50) {
-            chatHistory = chatHistory.slice(-50);
-        }
+        // Clean up expired messages
+        chatHistory = chatHistory.filter(msg => {
+            return msg.expires > Date.now();
+        });
         
         // Broadcast to ALL clients (including sender for confirmation)
         io.emit('message', data);
@@ -815,6 +816,14 @@ document.head.appendChild(script);
 
 // Start server
 const PORT = process.env.PORT || 3000;
+
+// Clean up expired messages every 30 seconds
+setInterval(() => {
+    chatHistory = chatHistory.filter(msg => {
+        return msg.expires > Date.now();
+    });
+    console.log('🧹 Cleaned up expired messages, remaining:', chatHistory.length);
+}, 30000);
 
 async function startServer() {
     try {

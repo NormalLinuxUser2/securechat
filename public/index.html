@@ -446,13 +446,20 @@
                 }
             }
             
-            // ALWAYS store in localStorage for cross-tab communication
+            // Store message temporarily (auto-delete after 1 minute)
             var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
             messages.push({
                 message: message,
                 username: username,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                expires: Date.now() + 60000 // Expires in 1 minute
             });
+            
+            // Clean up expired messages
+            messages = messages.filter(function(msg) {
+                return msg.expires > Date.now();
+            });
+            
             localStorage.setItem('chatMessages', JSON.stringify(messages));
             
             // Scroll to bottom
@@ -683,6 +690,20 @@
             var chatContainer = document.getElementById('chatContainer');
             var currentUsername = window.randomUsername;
             
+            // Clean up expired messages first
+            messages = messages.filter(function(msg) {
+                return msg.expires > Date.now();
+            });
+            localStorage.setItem('chatMessages', JSON.stringify(messages));
+            
+            // Clean up old seen messages (older than 2 minutes)
+            seenMessages = seenMessages.filter(function(msgId) {
+                var parts = msgId.split(':');
+                var timestamp = parseInt(parts[2]);
+                return Date.now() - timestamp < 120000; // 2 minutes
+            });
+            localStorage.setItem('seenMessages', JSON.stringify(seenMessages));
+            
             if (chatContainer && messages.length > 0) {
                 messages.forEach(function(msg) {
                     var messageId = msg.username + ':' + msg.message + ':' + msg.timestamp;
@@ -712,6 +733,19 @@
                 checkForNewMessages();
             }
         });
+        
+        // CLEAR ALL OLD MESSAGES IMMEDIATELY
+        function clearAllOldMessages() {
+            localStorage.removeItem('chatMessages');
+            localStorage.removeItem('seenMessages');
+            var chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.innerHTML = '';
+            }
+        }
+        
+        // Clear all old messages on page load
+        clearAllOldMessages();
         
         // Make functions globally accessible
         window.simplePasswordCheck = simplePasswordCheck;
