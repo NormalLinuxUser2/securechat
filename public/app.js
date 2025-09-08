@@ -442,6 +442,8 @@ function checkBypassKey() {
 window.checkBypassKey = checkBypassKey;
 window.forceStartSite = forceStartSite;
 window.startBobNow = startBobNow;
+window.testConnection = testConnection;
+window.simulateOtherUsers = simulateOtherUsers;
 
 // EMERGENCY BOB STARTER - Make BOB work no matter what
 window.startBobNow = function() {
@@ -454,6 +456,54 @@ window.forceStartSite = function() {
     console.log('🚀 EMERGENCY: Force starting site...');
     siteAccessGranted = true;
     initializeSite();
+};
+
+// EMERGENCY CONNECTION TESTER
+window.testConnection = function() {
+    console.log('🧪 Testing connection...');
+    console.log('Socket:', socket);
+    console.log('Connected:', isConnected);
+    console.log('Username:', randomUsername);
+    console.log('Status element:', statusEl);
+    
+    if (socket) {
+        console.log('📡 Socket exists, attempting connection...');
+        socket.connect();
+    } else {
+        console.log('❌ No socket available');
+    }
+    
+    // Add test message
+    if (chatContainer) {
+        addMessage('🧪 Connection test - checking server connection...', 'System');
+        addMessage(`👤 Current username: ${randomUsername}`, 'System');
+        addMessage(`📡 Socket status: ${socket ? 'Available' : 'Not available'}`, 'System');
+        addMessage(`🔗 Connected: ${isConnected ? 'Yes' : 'No'}`, 'System');
+    }
+};
+
+// SIMULATE OTHER USERS FOR TESTING
+window.simulateOtherUsers = function() {
+    console.log('👥 Simulating other users...');
+    
+    if (chatContainer) {
+        const testUsers = ['MysteriousUser', 'SilentChatter', 'ShadowPerson', 'PhantomEntity', 'GhostBeing'];
+        const testMessages = [
+            'Hello everyone!',
+            'How is everyone doing?',
+            'This chat is working great!',
+            'BOB is so funny!',
+            'The encryption is working perfectly!'
+        ];
+        
+        testUsers.forEach((user, index) => {
+            setTimeout(() => {
+                const message = testMessages[index] || 'Test message from ' + user;
+                addMessage(message, user);
+                console.log(`👤 Simulated message from ${user}: ${message}`);
+            }, index * 2000);
+        });
+    }
 };
 
 // Auto-start BOB after 3 seconds regardless of site state
@@ -718,16 +768,27 @@ function init() {
 
 // Connect to server
 function connectToServer() {
-    statusEl.innerHTML = `<span class="loading"></span> Signing in as ${randomUsername}...`;
+    console.log('🌐 Attempting to connect to server...');
+    console.log('👤 Username:', randomUsername);
+    console.log('📡 Socket available:', !!socket);
+    
+    if (statusEl) {
+        statusEl.innerHTML = `<span class="loading"></span> Signing in as ${randomUsername}...`;
+        console.log('✅ Status updated with username');
+    } else {
+        console.log('❌ Status element not found!');
+    }
     
     // Enable chat immediately for testing (even without server)
-    messageInput.disabled = false;
-    sendButton.disabled = false;
+    if (messageInput) messageInput.disabled = false;
+    if (sendButton) sendButton.disabled = false;
     messageInput.placeholder = 'Type your message...';
     
     if (socket) {
+        console.log('🔌 Setting up socket event listeners...');
+        
         socket.on('connect', () => {
-            console.log('✅ Connected to server');
+            console.log('✅ Connected to server successfully!');
             isConnected = true;
             
             // Send client public key to server
@@ -736,8 +797,11 @@ function connectToServer() {
                 console.log('🔑 Client public key sent to server');
             }
             
-            statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
-            addMessage('Connected to server - messages will be shared with all users', 'System');
+            if (statusEl) {
+                statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
+            }
+            addMessage('✅ Connected to server - messages will be shared with all users', 'System');
+            addMessage(`👤 Your username: ${randomUsername}`, 'System');
         });
         
         socket.on('disconnect', () => {
@@ -824,7 +888,9 @@ function connectToServer() {
         });
         
         // Try to connect
+        console.log('🚀 Attempting socket connection...');
         socket.connect();
+        console.log('📡 Socket connect() called');
     } else {
         // No socket available - run in offline mode
         console.log('🔒 Running in offline mode');
