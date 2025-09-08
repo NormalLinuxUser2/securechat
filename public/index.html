@@ -364,6 +364,30 @@
                         window.initializeSite();
                     }
                 }
+                
+                // Initialize socket connection
+                if (typeof io !== 'undefined' && !window.socket) {
+                    try {
+                        window.socket = io();
+                        window.socket.on('connect', function() {
+                            console.log('Socket connected');
+                        });
+                        window.socket.on('message', function(data) {
+                            if (data.username !== window.randomUsername) {
+                                var chatContainer = document.getElementById('chatContainer');
+                                if (chatContainer) {
+                                    var messageEl = document.createElement('div');
+                                    messageEl.className = 'message';
+                                    messageEl.innerHTML = '<strong>' + data.username + ':</strong> ' + data.message;
+                                    chatContainer.appendChild(messageEl);
+                                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.log('Socket connection failed');
+                    }
+                }
             } else {
                 alert('Wrong password');
                 document.getElementById('sitePassword').value = '';
@@ -400,11 +424,26 @@
             
             
             // Send message to server for broadcasting to other users
-            if (typeof io !== 'undefined' && window.socket && window.socket.connected) {
-                window.socket.emit('message', {
-                    message: message,
-                    username: username
-                });
+            if (typeof io !== 'undefined') {
+                if (window.socket && window.socket.connected) {
+                    window.socket.emit('message', {
+                        message: message,
+                        username: username
+                    });
+                } else {
+                    // Try to create socket connection
+                    try {
+                        window.socket = io();
+                        window.socket.on('connect', function() {
+                            window.socket.emit('message', {
+                                message: message,
+                                username: username
+                            });
+                        });
+                    } catch (error) {
+                        // Socket failed, will use localStorage fallback
+                    }
+                }
             }
             
             // ALWAYS store in localStorage for cross-tab communication
@@ -640,22 +679,25 @@
         // CHECK FOR NEW MESSAGES IN LOCALSTORAGE
         function checkForNewMessages() {
             var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-            var lastMessageTime = localStorage.getItem('lastMessageTime') || '0';
+            var seenMessages = JSON.parse(localStorage.getItem('seenMessages') || '[]');
             var chatContainer = document.getElementById('chatContainer');
             var currentUsername = window.randomUsername;
             
             if (chatContainer && messages.length > 0) {
                 messages.forEach(function(msg) {
-                    if (msg.timestamp > parseInt(lastMessageTime)) {
-                        // Only show messages from OTHER users, not yourself
-                        if (msg.username && msg.username !== currentUsername) {
-                            var messageEl = document.createElement('div');
-                            messageEl.className = 'message';
-                            messageEl.innerHTML = '<strong>' + msg.username + ':</strong> ' + msg.message;
-                            chatContainer.appendChild(messageEl);
-                            chatContainer.scrollTop = chatContainer.scrollHeight;
-                        }
-                        localStorage.setItem('lastMessageTime', msg.timestamp.toString());
+                    var messageId = msg.username + ':' + msg.message + ':' + msg.timestamp;
+                    
+                    // Only show messages from OTHER users that haven't been seen
+                    if (msg.username && msg.username !== currentUsername && seenMessages.indexOf(messageId) === -1) {
+                        var messageEl = document.createElement('div');
+                        messageEl.className = 'message';
+                        messageEl.innerHTML = '<strong>' + msg.username + ':</strong> ' + msg.message;
+                        chatContainer.appendChild(messageEl);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        
+                        // Mark this message as seen
+                        seenMessages.push(messageId);
+                        localStorage.setItem('seenMessages', JSON.stringify(seenMessages));
                     }
                 });
             }
