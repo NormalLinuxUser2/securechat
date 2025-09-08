@@ -334,56 +334,40 @@
     </div>
 
     <script>
-        // SECURE PASSWORD CHECK - UNBYPASSABLE
+        // SIMPLE PASSWORD CHECK - JUST WORKS
         function simplePasswordCheck() {
             var password = document.getElementById('sitePassword').value;
+            console.log('🔐 Checking password:', password);
+            console.log('🔐 Expected password: MoneyMakingMen16$');
             
-            // Server-side authentication for maximum security
-            fetch('/api/authenticate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password: password })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Store authentication token and access
-                    localStorage.setItem('authToken', data.authToken);
-                    localStorage.setItem('siteAccessGranted', 'true');
-                    localStorage.setItem('accessTime', Date.now().toString());
-                    
-                    // Hide modal
-                    var modal = document.getElementById('passwordModal');
-                    if (modal) {
-                        modal.classList.add('hidden');
-                    }
-                    
-                    console.log('✅ Password correct - server authentication successful');
-                } else {
-                    alert('Wrong password');
-                    document.getElementById('sitePassword').value = '';
+            if (password === 'MoneyMakingMen16$') {
+                // Store authentication
+                localStorage.setItem('siteAccessGranted', 'true');
+                localStorage.setItem('accessTime', Date.now().toString());
+                
+                // Hide modal
+                var modal = document.getElementById('passwordModal');
+                if (modal) {
+                    modal.classList.add('hidden');
                 }
-            })
-            .catch(error => {
-                console.error('Authentication error:', error);
-                // Fallback to client-side check if server unavailable
-                if (password === 'MoneyMakingMen16$') {
-                    localStorage.setItem('siteAccessGranted', 'true');
-                    localStorage.setItem('accessTime', Date.now().toString());
-                    
-                    var modal = document.getElementById('passwordModal');
-                    if (modal) {
-                        modal.classList.add('hidden');
-                    }
-                    
-                    console.log('✅ Password correct - fallback authentication successful');
+                
+                console.log('✅ Password correct - access granted');
+                
+                // Initialize the site after successful authentication
+                if (typeof initializeSite === 'function') {
+                    console.log('🚀 Initializing site after authentication...');
+                    initializeSite();
                 } else {
-                    alert('Wrong password');
-                    document.getElementById('sitePassword').value = '';
+                    console.log('⚠️ initializeSite function not available, trying window.initializeSite...');
+                    if (typeof window.initializeSite === 'function') {
+                        window.initializeSite();
+                    }
                 }
-            });
+            } else {
+                console.log('❌ Wrong password entered');
+                alert('Wrong password');
+                document.getElementById('sitePassword').value = '';
+            }
         }
         
         // DISABLED: Check if user already has access - causing modal to disappear

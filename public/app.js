@@ -452,6 +452,7 @@ window.startBobNow = startBobNow;
 window.testConnection = testConnection;
 window.simulateOtherUsers = simulateOtherUsers;
 window.bypassPassword = bypassPassword;
+window.initializeSite = initializeSite;
 
 // EMERGENCY BOB STARTER - Make BOB work no matter what
 window.startBobNow = function() {
@@ -585,9 +586,16 @@ setTimeout(() => {
 async function initializeSite() {
     console.log('🔐 Site access granted - initializing...');
     
-    // Generate random username
-    randomUsername = generateRandomUsername();
-    console.log('👤 Generated username:', randomUsername);
+    // Generate random username if not already set
+    if (!randomUsername) {
+        randomUsername = generateRandomUsername();
+        console.log('👤 Generated new username:', randomUsername);
+    } else {
+        console.log('👤 Using existing username:', randomUsername);
+    }
+    
+    // Make sure username is globally accessible
+    window.randomUsername = randomUsername;
     
     // EMERGENCY: Start BOB immediately
     console.log('🤖 EMERGENCY: Starting BOB immediately...');
