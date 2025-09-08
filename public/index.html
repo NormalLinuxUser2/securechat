@@ -338,23 +338,61 @@
         function simplePasswordCheck() {
             var password = document.getElementById('sitePassword').value;
             if (password === 'MoneyMakingMen16$') {
+                // Store that user has entered correct password
+                localStorage.setItem('siteAccessGranted', 'true');
+                localStorage.setItem('accessTime', Date.now().toString());
+                
                 document.getElementById('passwordModal').style.display = 'none';
                 document.getElementById('passwordModal').classList.add('hidden');
-                // Reload page to start the app
-                setTimeout(function() {
-                    window.location.reload();
-                }, 100);
+                
+                // Don't reload page - just hide modal and continue
+                console.log('✅ Password correct - access granted');
             } else {
                 alert('Wrong password');
                 document.getElementById('sitePassword').value = '';
             }
         }
         
-        // Make function globally accessible
-        window.simplePasswordCheck = simplePasswordCheck;
+        // Check if user already has access
+        function checkExistingAccess() {
+            var hasAccess = localStorage.getItem('siteAccessGranted');
+            var accessTime = localStorage.getItem('accessTime');
+            
+            if (hasAccess === 'true' && accessTime) {
+                // Check if access is still valid (within 24 hours)
+                var timeDiff = Date.now() - parseInt(accessTime);
+                var hoursDiff = timeDiff / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24) {
+                    // User already has access, hide modal
+                    var modal = document.getElementById('passwordModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.classList.add('hidden');
+                    }
+                    console.log('✅ Existing access found - modal hidden');
+                    return true;
+                } else {
+                    // Access expired, clear it
+                    localStorage.removeItem('siteAccessGranted');
+                    localStorage.removeItem('accessTime');
+                }
+            }
+            return false;
+        }
         
-        // Add event listeners when page loads
+        // Make functions globally accessible
+        window.simplePasswordCheck = simplePasswordCheck;
+        window.checkExistingAccess = checkExistingAccess;
+        
+        // Check for existing access when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user already has access
+            if (checkExistingAccess()) {
+                return; // Don't show modal if access exists
+            }
+            
+            // Set up event listeners only if modal is shown
             var submitBtn = document.getElementById('submitPassword');
             var passwordInput = document.getElementById('sitePassword');
             

@@ -530,7 +530,29 @@ document.addEventListener('DOMContentLoaded', function() {
         return; // Don't proceed if blocked
     }
     
-    // Show password modal immediately
+    // Check if user already has access
+    const hasAccess = localStorage.getItem('siteAccessGranted');
+    const accessTime = localStorage.getItem('accessTime');
+    
+    if (hasAccess === 'true' && accessTime) {
+        // Check if access is still valid (within 24 hours)
+        const timeDiff = Date.now() - parseInt(accessTime);
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24) {
+            // User already has access, don't show modal
+            console.log('✅ Existing access found - skipping password modal');
+            siteAccessGranted = true;
+            initializeSite();
+            return;
+        } else {
+            // Access expired, clear it
+            localStorage.removeItem('siteAccessGranted');
+            localStorage.removeItem('accessTime');
+        }
+    }
+    
+    // Show password modal only if no existing access
     showPasswordModal();
     
     // BULLETPROOF: Direct event setup that will work no matter what
