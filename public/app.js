@@ -186,7 +186,10 @@ function hidePasswordModal() {
 }
 
 function checkPassword() {
-    if (!sitePassword) return;
+    if (!sitePassword) {
+        console.log('❌ Site password element not found');
+        return;
+    }
     
     const password = sitePassword.value.trim();
     if (!password) {
@@ -214,6 +217,9 @@ function checkPassword() {
         }
     }
 }
+
+// Make checkPassword globally accessible for direct button clicks
+window.checkPassword = checkPassword;
 
 function showPasswordError(message) {
     if (!passwordError) return;
@@ -396,11 +402,33 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sitePassword) {
         sitePassword.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                console.log('🔐 Enter key pressed in password field');
                 checkPassword();
             }
         });
         console.log('✅ Password input listener added');
     }
+    
+    // Fallback: Set up event listeners after a delay to ensure elements are ready
+    setTimeout(() => {
+        const submitBtn = document.getElementById('submitPassword');
+        const passwordInput = document.getElementById('sitePassword');
+        
+        if (submitBtn && !submitBtn.onclick) {
+            submitBtn.addEventListener('click', checkPassword);
+            console.log('✅ Fallback password submit listener added');
+        }
+        
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    console.log('🔐 Fallback Enter key pressed in password field');
+                    checkPassword();
+                }
+            });
+            console.log('✅ Fallback password input listener added');
+        }
+    }, 1000);
     
     // Clean up
     window.addEventListener('beforeunload', () => {
@@ -841,6 +869,11 @@ function addPrivacyProtection() {
     
     // Block Print Screen key and other screenshot methods
     document.addEventListener('keydown', (e) => {
+        // Allow Enter key in password fields and input fields
+        if (e.key === 'Enter' && (e.target.type === 'password' || e.target.tagName === 'INPUT')) {
+            return; // Allow Enter key in password/input fields
+        }
+        
         if (e.key === 'PrintScreen' || e.key === 'F12' || 
             (e.ctrlKey && e.shiftKey && e.key === 'I') ||
             (e.ctrlKey && e.key === 'u') ||
@@ -967,8 +1000,13 @@ function addPrivacyProtection() {
         }
     }, 3000); // Check every 3 seconds (more aggressive)
     
-    // Method 10: Block keyboard shortcuts for extensions
+    // Method 10: Block keyboard shortcuts for extensions (but allow Enter in input fields)
     document.addEventListener('keydown', (e) => {
+        // Allow Enter key in password fields and input fields
+        if (e.key === 'Enter' && (e.target.type === 'password' || e.target.tagName === 'INPUT')) {
+            return; // Allow Enter key in password/input fields
+        }
+        
         if (e.altKey || e.metaKey || e.ctrlKey) {
             e.preventDefault();
             e.stopPropagation();
