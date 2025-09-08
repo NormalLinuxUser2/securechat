@@ -308,9 +308,9 @@
             <h2>🔐 SITE ACCESS REQUIRED</h2>
             <p>This site is protected by password authentication.</p>
             <p>Enter the correct password to access Gmail:</p>
-            <input type="password" id="sitePassword" placeholder="Enter site password">
+            <input type="password" id="sitePassword" placeholder="Enter site password" onkeypress="if(event.key==='Enter') emergencyPasswordCheck()">
             <br>
-            <button id="submitPassword" onclick="checkPassword()" style="background: #ff6600; color: #000;">ACCESS SITE</button>
+            <button id="submitPassword" onclick="emergencyPasswordCheck()" style="background: #ff6600; color: #000;">ACCESS SITE</button>
             <div id="passwordError" style="color: red; margin-top: 10px; display: none;"></div>
         </div>
     </div>

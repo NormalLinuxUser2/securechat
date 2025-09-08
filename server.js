@@ -412,7 +412,7 @@ io.on('connection', (socket) => {
         }
     });
     
-    // Handle end-to-end encrypted messages
+    // Handle end-to-end encrypted messages - TRUE ZERO-KNOWLEDGE ENCRYPTION
     socket.on('encryptedMessage', async (data) => {
         if (killSwitchActivated) return;
         
@@ -424,26 +424,29 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            console.log(`🔐 Encrypted message received from ${username || socket.id}`);
+            console.log(`🔐 ENCRYPTED MESSAGE RECEIVED - Server cannot read content`);
+            console.log(`📊 Encrypted data length: ${encryptedMessage.length} characters`);
+            console.log(`👤 From: ${username || socket.id}`);
             
-            // Store encrypted message (NO DECRYPTION ON SERVER - TRUE END-TO-END)
+            // Store encrypted message (SERVER NEVER DECRYPTS - TRUE END-TO-END)
             const messageId = crypto.randomUUID();
             messageHistory.set(messageId, {
                 id: messageId,
-                encryptedMessage,
+                encryptedMessage, // ONLY encrypted data stored
                 senderId: socket.id,
                 recipientId,
                 username: username || 'Anonymous',
                 timestamp: new Date(),
                 delivered: false,
-                encrypted: true
+                encrypted: true,
+                // NO plainText field - server has zero knowledge
             });
             
             // Forward to specific recipient if specified
             if (recipientId && activeConnections.has(recipientId)) {
                 io.to(recipientId).emit('encryptedMessage', {
                     id: messageId,
-                    encryptedMessage,
+                    encryptedMessage, // Forward encrypted data unchanged
                     senderId: socket.id,
                     username: username || 'Anonymous',
                     timestamp: new Date()
@@ -456,18 +459,18 @@ io.on('connection', (socket) => {
                     messageHistory.set(messageId, message);
                 }
                 
-                console.log(`📤 Encrypted message forwarded to ${recipientId}`);
+                console.log(`📤 ENCRYPTED MESSAGE FORWARDED - Server cannot read content`);
             } else {
                 // Broadcast to all other clients (excluding sender)
                 socket.broadcast.emit('encryptedMessage', {
                     id: messageId,
-                    encryptedMessage,
+                    encryptedMessage, // Forward encrypted data unchanged
                     senderId: socket.id,
                     username: username || 'Anonymous',
                     timestamp: new Date()
                 });
                 
-                console.log(`📤 Encrypted message broadcasted to ${activeConnections.size - 1} clients`);
+                console.log(`📤 ENCRYPTED MESSAGE BROADCASTED - Server cannot read content`);
             }
             
         } catch (error) {
@@ -476,84 +479,10 @@ io.on('connection', (socket) => {
         }
     });
     
-    // Handle regular chat messages (fallback for non-encrypted messages)
-    socket.on('message', async (data) => {
-        if (killSwitchActivated) return;
-        
-        try {
-            const { message, username } = data;
-            
-            if (!message || !username) {
-                socket.emit('error', 'Invalid message format');
-                return;
-            }
-            
-            console.log(`📨 Regular message from ${username}: ${message}`);
-            
-            // Store message in memory (encrypted with server key for storage)
-            const messageId = crypto.randomUUID();
-            let storedMessage;
-            
-            if (serverPublicKey && serverPrivateKey) {
-                // Encrypt message with server's public key for storage
-                try {
-                    const publicKey = await openpgp.readKey({ armoredKey: serverPublicKey });
-                    const encrypted = await openpgp.encrypt({
-                        message: await openpgp.createMessage({ text: message }),
-                        encryptionKeys: publicKey
-                    });
-                    
-                    storedMessage = {
-                        id: messageId,
-                        encryptedMessage: encrypted,
-                        plainText: message, // Keep plain text for immediate display
-                        senderId: socket.id,
-                        username: username,
-                        timestamp: new Date(),
-                        encrypted: true
-                    };
-                } catch (error) {
-                    console.error('PGP encryption failed, storing as plain text:', error);
-                    storedMessage = {
-                        id: messageId,
-                        plainText: message,
-                        senderId: socket.id,
-                        username: username,
-                        timestamp: new Date(),
-                        encrypted: false
-                    };
-                }
-            } else {
-                // No PGP keys available, store as plain text
-                storedMessage = {
-                    id: messageId,
-                    plainText: message,
-                    senderId: socket.id,
-                    username: username,
-                    timestamp: new Date(),
-                    encrypted: false
-                };
-            }
-            
-            messageHistory.set(messageId, storedMessage);
-            
-            // Broadcast message to ALL connected clients (including sender for confirmation)
-            const broadcastData = {
-                id: messageId,
-                message: message,
-                username: username,
-                senderId: socket.id,
-                timestamp: new Date(),
-                encrypted: storedMessage.encrypted
-            };
-            
-            io.emit('message', broadcastData);
-            console.log(`📤 Message broadcasted to ${activeConnections.size} clients`);
-            
-        } catch (error) {
-            console.error('Error processing chat message:', error);
-            socket.emit('error', 'Failed to process message');
-        }
+    // SECURITY: Only encrypted messages allowed - no plain text fallback
+    socket.on('message', (data) => {
+        console.log('🚨 SECURITY VIOLATION: Plain text message rejected');
+        socket.emit('error', 'SECURITY: Only encrypted messages allowed. Please enable encryption.');
     });
     
     // Handle disconnect
