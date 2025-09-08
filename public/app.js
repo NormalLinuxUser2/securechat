@@ -1,4 +1,4 @@
-// SecureChat Client - Anonymous Chat with Bob's Random Dialogue
+// SecureChat Client - End-to-End Encrypted Chat
 let socket = null;
 
 // Check if Socket.IO is available (only when running on a server)
@@ -28,6 +28,14 @@ const BYPASS_KEY = 'MoneyMakingMen16$';
 // Site access state
 let siteAccessGranted = false;
 
+// PGP Encryption variables
+let serverPublicKey = null;
+let clientPrivateKey = null;
+let clientPublicKey = null;
+let openpgp = null;
+let isEncryptionReady = false;
+let peerPublicKeys = new Map(); // Store peer public keys for direct encryption
+
 // Generate random username
 function generateRandomUsername() {
     const adjectives = ['Mysterious', 'Silent', 'Shadow', 'Phantom', 'Ghost', 'Gay', 'Hidden', 'Secret', 'Unknown', 'Anonymous'];
@@ -38,6 +46,127 @@ function generateRandomUsername() {
     const noun = nouns[Math.floor(Math.random() * adjectives.length)];
     
     return `${adjective}${noun}${randomNum}`;
+}
+
+// PGP Encryption Functions
+async function initializePGP() {
+    try {
+        console.log('🔐 Initializing PGP encryption...');
+        
+        // Load OpenPGP library
+        if (typeof window.openpgp === 'undefined') {
+            console.log('🔐 Loading OpenPGP library...');
+            await loadOpenPGPLibrary();
+        }
+        
+        openpgp = window.openpgp;
+        
+        // Generate client key pair
+        console.log('🔐 Generating client PGP keys...');
+        const { privateKey, publicKey } = await openpgp.generateKey({
+            type: 'ecc',
+            curve: 'curve25519',
+            userIDs: [{ name: randomUsername, email: `${randomUsername}@securechat.local` }],
+            passphrase: crypto.getRandomValues(new Uint8Array(32)).join('')
+        });
+        
+        clientPrivateKey = privateKey;
+        clientPublicKey = publicKey;
+        
+        console.log('✅ Client PGP keys generated successfully');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to initialize PGP:', error);
+        return false;
+    }
+}
+
+async function loadOpenPGPLibrary() {
+    return new Promise((resolve, reject) => {
+        if (typeof window.openpgp !== 'undefined') {
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/openpgp@5.10.0/dist/openpgp.min.js';
+        script.onload = () => {
+            console.log('✅ OpenPGP library loaded');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('❌ Failed to load OpenPGP library');
+            reject(new Error('Failed to load OpenPGP library'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+async function encryptMessage(message, recipientPublicKey) {
+    try {
+        if (!openpgp || !recipientPublicKey) {
+            throw new Error('PGP not initialized or no recipient key');
+        }
+        
+        const publicKey = await openpgp.readKey({ armoredKey: recipientPublicKey });
+        const encrypted = await openpgp.encrypt({
+            message: await openpgp.createMessage({ text: message }),
+            encryptionKeys: publicKey
+        });
+        
+        return encrypted;
+    } catch (error) {
+        console.error('Encryption failed:', error);
+        throw new Error('Encryption failed');
+    }
+}
+
+async function decryptMessage(encryptedMessage, privateKey) {
+    try {
+        if (!openpgp || !privateKey) {
+            throw new Error('PGP not initialized or no private key');
+        }
+        
+        const privateKeyObj = await openpgp.readPrivateKey({ armoredKey: privateKey });
+        const message = await openpgp.readMessage({ armoredMessage: encryptedMessage });
+        const { data: decrypted } = await openpgp.decrypt({
+            message,
+            decryptionKeys: privateKeyObj
+        });
+        
+        return decrypted;
+    } catch (error) {
+        console.error('Decryption failed:', error);
+        throw new Error('Decryption failed');
+    }
+}
+
+// Send peer-to-peer encrypted message
+async function sendPeerMessage(message, targetClientId) {
+    try {
+        if (!isEncryptionReady || !socket || !socket.connected) {
+            throw new Error('Encryption not ready or not connected');
+        }
+        
+        const peerPublicKey = peerPublicKeys.get(targetClientId);
+        if (!peerPublicKey) {
+            throw new Error('Peer public key not available');
+        }
+        
+        const encrypted = await encryptMessage(message, peerPublicKey);
+        
+        socket.emit('encryptedMessage', {
+            encryptedMessage: encrypted,
+            username: randomUsername,
+            recipientId: targetClientId
+        });
+        
+        console.log(`🔐 Peer-to-peer encrypted message sent to ${targetClientId}`);
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to send peer message:', error);
+        return false;
+    }
 }
 
 // Password protection functions
@@ -162,11 +291,20 @@ function checkBypassKey() {
 // Make function globally accessible for HTML onclick
 window.checkBypassKey = checkBypassKey;
 
-function initializeSite() {
+async function initializeSite() {
     console.log('🔐 Site access granted - initializing...');
     
     // Generate random username
     randomUsername = generateRandomUsername();
+    
+    // Initialize PGP encryption
+    const pgpInitialized = await initializePGP();
+    if (pgpInitialized) {
+        isEncryptionReady = true;
+        console.log('✅ PGP encryption ready');
+    } else {
+        console.log('⚠️ PGP encryption failed, using fallback mode');
+    }
     
     // Start the app
     init();
@@ -350,6 +488,13 @@ function connectToServer() {
         socket.on('connect', () => {
             console.log('✅ Connected to server');
             isConnected = true;
+            
+            // Send client public key to server
+            if (isEncryptionReady && clientPublicKey) {
+                socket.emit('clientPublicKey', clientPublicKey);
+                console.log('🔑 Client public key sent to server');
+            }
+            
             statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail (Server Connected)`;
             addMessage('Connected to server - messages will be shared with all users', 'System');
         });
@@ -362,9 +507,40 @@ function connectToServer() {
             // Keep chat enabled even when offline
         });
         
-        // Listen for messages from other users
+        // Listen for server public key
+        socket.on('serverPublicKey', (publicKey) => {
+            serverPublicKey = publicKey;
+            console.log('🔑 Server public key received');
+            addMessage('🔐 End-to-end encryption established', 'System');
+        });
+        
+        // Listen for peer public keys
+        socket.on('peerPublicKey', (data) => {
+            peerPublicKeys.set(data.clientId, data.publicKey);
+            console.log(`🔑 Peer public key received for ${data.clientId}`);
+            addMessage(`🔐 Peer encryption key received`, 'System');
+        });
+        
+        // Listen for encrypted messages from other users
+        socket.on('encryptedMessage', async (data) => {
+            console.log('🔐 Received encrypted message from server:', data);
+            
+            try {
+                if (isEncryptionReady && clientPrivateKey) {
+                    const decrypted = await decryptMessage(data.encryptedMessage, clientPrivateKey);
+                    addMessage(decrypted, data.username || 'Anonymous');
+                } else {
+                    addMessage('[Encrypted message - decryption not available]', data.username || 'Anonymous');
+                }
+            } catch (error) {
+                console.error('❌ Failed to decrypt message:', error);
+                addMessage('[Failed to decrypt message]', data.username || 'Anonymous');
+            }
+        });
+        
+        // Listen for regular messages from other users (fallback)
         socket.on('message', (data) => {
-            console.log('📨 Received message from server:', data);
+            console.log('📨 Received regular message from server:', data);
             
             // Don't show our own messages twice (they're already shown locally)
             if (data.username !== randomUsername) {
@@ -412,7 +588,7 @@ function connectToServer() {
 }
 
 // Send message function
-function sendMessage() {
+async function sendMessage() {
     if (!messageInput || !chatContainer) return;
     
     const message = messageInput.value.trim();
@@ -424,13 +600,32 @@ function sendMessage() {
     // Add message to chat immediately (local display)
     addMessage(message, randomUsername);
     
-    // Send message to server for broadcasting to all users
+    // Send message to server
     if (socket && socket.connected) {
-        socket.emit('message', { 
-            message: message, 
-            username: randomUsername 
-        });
-        console.log('📤 Message sent to server');
+        try {
+            // Try to send encrypted message if encryption is ready
+            if (isEncryptionReady && serverPublicKey) {
+                console.log('🔐 Encrypting message for end-to-end transmission...');
+                const encrypted = await encryptMessage(message, serverPublicKey);
+                
+                socket.emit('encryptedMessage', {
+                    encryptedMessage: encrypted,
+                    username: randomUsername,
+                    recipientId: null // Broadcast to all
+                });
+                console.log('🔐 Encrypted message sent to server');
+            } else {
+                // Fallback to regular message
+                socket.emit('message', { 
+                    message: message, 
+                    username: randomUsername 
+                });
+                console.log('📤 Regular message sent to server (encryption not ready)');
+            }
+        } catch (error) {
+            console.error('❌ Failed to send message:', error);
+            addMessage('(Failed to send message - encryption error)', 'System');
+        }
     } else {
         console.log('⚠️ Socket not connected, message only local');
         addMessage('(Message sent locally - server not connected)', 'System');

@@ -273,10 +273,33 @@ app.get('/publickey', (req, res) => {
     }
     
     if (serverPublicKey) {
-        res.json({ publicKey: serverPublicKey });
+        res.json({ 
+            publicKey: serverPublicKey,
+            keyId: '0x16BA41A8',
+            algorithm: 'ECC Curve25519',
+            timestamp: new Date().toISOString()
+        });
     } else {
         res.status(500).json({ error: 'Server key not available' });
     }
+});
+
+// Get connected clients info (for debugging)
+app.get('/clients', (req, res) => {
+    if (killSwitchActivated) {
+        return res.status(404).send('Not Found');
+    }
+    
+    const clients = Array.from(activeConnections.values()).map(conn => ({
+        id: conn.id,
+        hasPublicKey: !!conn.publicKey,
+        connectedAt: conn.connectedAt
+    }));
+    
+    res.json({
+        totalClients: clients.length,
+        clients: clients
+    });
 });
 
 // Health check endpoint for Railway
@@ -363,33 +386,66 @@ io.on('connection', (socket) => {
         if (connection) {
             connection.publicKey = publicKey;
             activeConnections.set(socket.id, connection);
+            console.log(`🔑 Client public key received for ${socket.id}`);
+            
+            // Notify other clients about new public key
+            socket.broadcast.emit('peerPublicKey', {
+                clientId: socket.id,
+                publicKey: publicKey
+            });
         }
     });
     
-    // Handle encrypted messages
+    // Handle peer-to-peer key exchange
+    socket.on('requestPeerKey', (targetClientId) => {
+        if (killSwitchActivated) return;
+        
+        const targetConnection = activeConnections.get(targetClientId);
+        if (targetConnection && targetConnection.publicKey) {
+            socket.emit('peerPublicKey', {
+                clientId: targetClientId,
+                publicKey: targetConnection.publicKey
+            });
+            console.log(`🔑 Peer key requested and sent for ${targetClientId}`);
+        } else {
+            socket.emit('error', 'Peer key not available');
+        }
+    });
+    
+    // Handle end-to-end encrypted messages
     socket.on('encryptedMessage', async (data) => {
         if (killSwitchActivated) return;
         
         try {
-            const { encryptedMessage, recipientId } = data;
+            const { encryptedMessage, recipientId, username } = data;
             
-            // Store encrypted message (NO DECRYPTION ON SERVER)
+            if (!encryptedMessage) {
+                socket.emit('error', 'Invalid encrypted message format');
+                return;
+            }
+            
+            console.log(`🔐 Encrypted message received from ${username || socket.id}`);
+            
+            // Store encrypted message (NO DECRYPTION ON SERVER - TRUE END-TO-END)
             const messageId = crypto.randomUUID();
             messageHistory.set(messageId, {
                 id: messageId,
                 encryptedMessage,
                 senderId: socket.id,
                 recipientId,
+                username: username || 'Anonymous',
                 timestamp: new Date(),
-                delivered: false
+                delivered: false,
+                encrypted: true
             });
             
-            // Forward to recipient
+            // Forward to specific recipient if specified
             if (recipientId && activeConnections.has(recipientId)) {
                 io.to(recipientId).emit('encryptedMessage', {
                     id: messageId,
                     encryptedMessage,
                     senderId: socket.id,
+                    username: username || 'Anonymous',
                     timestamp: new Date()
                 });
                 
@@ -399,22 +455,28 @@ io.on('connection', (socket) => {
                     message.delivered = true;
                     messageHistory.set(messageId, message);
                 }
+                
+                console.log(`📤 Encrypted message forwarded to ${recipientId}`);
             } else {
-                // Broadcast to all if no specific recipient
+                // Broadcast to all other clients (excluding sender)
                 socket.broadcast.emit('encryptedMessage', {
                     id: messageId,
                     encryptedMessage,
                     senderId: socket.id,
+                    username: username || 'Anonymous',
                     timestamp: new Date()
                 });
+                
+                console.log(`📤 Encrypted message broadcasted to ${activeConnections.size - 1} clients`);
             }
             
         } catch (error) {
+            console.error('Error processing encrypted message:', error);
             socket.emit('error', 'Failed to process encrypted message');
         }
     });
     
-    // Handle regular chat messages (for immediate chat functionality)
+    // Handle regular chat messages (fallback for non-encrypted messages)
     socket.on('message', async (data) => {
         if (killSwitchActivated) return;
         
@@ -426,9 +488,9 @@ io.on('connection', (socket) => {
                 return;
             }
             
-            console.log(`📨 Chat message from ${username}: ${message}`);
+            console.log(`📨 Regular message from ${username}: ${message}`);
             
-            // Store message in memory (encrypted if PGP is available)
+            // Store message in memory (encrypted with server key for storage)
             const messageId = crypto.randomUUID();
             let storedMessage;
             
