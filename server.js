@@ -66,22 +66,31 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
-// Authentication endpoint
-app.post('/api/authenticate', (req, res) => {
+// Authentication endpoint with rate limiting
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 attempts per 15 minutes
+    message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.post('/api/authenticate', authLimiter, (req, res) => {
     const { password } = req.body;
+    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
     
     if (password === SITE_PASSWORD) {
         const authToken = crypto.randomBytes(32).toString('hex');
         authenticatedUsers.add(authToken);
         
-        console.log('✅ User authenticated successfully');
+        console.log(`✅ User authenticated successfully from IP: ${clientIP}`);
         res.json({ 
             success: true, 
             authToken: authToken,
             message: 'Authentication successful' 
         });
     } else {
-        console.log('❌ Authentication failed - wrong password');
+        console.log(`❌ Authentication failed from IP: ${clientIP} - wrong password`);
         res.status(401).json({ 
             success: false, 
             error: 'Invalid password' 
