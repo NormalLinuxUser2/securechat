@@ -405,16 +405,16 @@
                     message: message,
                     username: username
                 });
-            } else {
-                // Fallback: Store message in localStorage for other tabs
-                var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
-                messages.push({
-                    message: message,
-                    username: username,
-                    timestamp: Date.now()
-                });
-                localStorage.setItem('chatMessages', JSON.stringify(messages));
             }
+            
+            // ALWAYS store in localStorage for cross-tab communication
+            var messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+            messages.push({
+                message: message,
+                username: username,
+                timestamp: Date.now()
+            });
+            localStorage.setItem('chatMessages', JSON.stringify(messages));
             
             // Scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -661,8 +661,15 @@
             }
         }
         
-        // Check for new messages every second
-        setInterval(checkForNewMessages, 1000);
+        // Check for new messages every 500ms
+        setInterval(checkForNewMessages, 500);
+        
+        // Also check when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkForNewMessages();
+            }
+        });
         
         // Make functions globally accessible
         window.simplePasswordCheck = simplePasswordCheck;
