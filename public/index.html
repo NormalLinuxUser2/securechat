@@ -404,6 +404,18 @@
             
             console.log('📤 Message added with username:', username);
             
+            // Send message to server for broadcasting to other users
+            if (typeof io !== 'undefined' && window.socket && window.socket.connected) {
+                console.log('📡 Sending message to server for broadcasting...');
+                window.socket.emit('message', {
+                    message: message,
+                    username: username
+                });
+                console.log('📡 Message sent to server');
+            } else {
+                console.log('⚠️ Socket not available - message only local');
+            }
+            
             // Scroll to bottom
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
@@ -502,21 +514,43 @@
             
             // Make modal unremovable
             modal.setAttribute('data-protected', 'true');
+            modal.setAttribute('unselectable', 'on');
+            modal.setAttribute('ondragstart', 'return false');
+            modal.setAttribute('oncontextmenu', 'return false');
             modal.style.userSelect = 'none';
             modal.style.webkitUserSelect = 'none';
             modal.style.mozUserSelect = 'none';
             modal.style.msUserSelect = 'none';
+            modal.style.pointerEvents = 'auto';
             
             // Prevent right-click context menu
             modal.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 return false;
             });
             
             // Prevent drag
             modal.draggable = false;
             
-            console.log('🔒 Password modal protected from deletion');
+            // Prevent selection
+            modal.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Prevent inspect element shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12' || 
+                    (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                    (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                    (e.ctrlKey && e.key === 'U')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            console.log('🔒 Password modal protected from deletion and inspection');
         }
         
         // SECURE: Recreate password modal if deleted
@@ -572,6 +606,12 @@
                         modal.style.opacity = '1';
                         modal.style.pointerEvents = 'auto';
                         modal.style.zIndex = '999999';
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.width = '100%';
+                        modal.style.height = '100%';
+                        modal.style.background = 'rgba(0,0,0,0.9)';
                         
                         // Hide all other content
                         var allElements = document.querySelectorAll('*');
@@ -579,6 +619,8 @@
                             if (element.id !== 'passwordModal' && !element.closest('#passwordModal')) {
                                 if (element.tagName !== 'SCRIPT' && element.tagName !== 'STYLE') {
                                     element.style.display = 'none';
+                                    element.style.visibility = 'hidden';
+                                    element.style.opacity = '0';
                                 }
                             }
                         });
@@ -586,7 +628,7 @@
                         console.log('🔒 SECURITY: Modal forced visible, site blocked');
                     }
                 }
-            }, 100); // Check every 100ms for maximum security
+            }, 50); // Check every 50ms for maximum security
         }
         
         // SIMPLE: Only protect modal from deletion, don't force visibility
@@ -617,6 +659,25 @@
             
             // SECURITY: Prevent inspect element bypass
             startSecurityProtection();
+            
+            // NUCLEAR OPTION: Block page if modal is tampered with
+            setTimeout(function() {
+                var modal = document.getElementById('passwordModal');
+                var hasAccess = localStorage.getItem('siteAccessGranted');
+                var accessTime = localStorage.getItem('accessTime');
+                
+                var isValidAccess = false;
+                if (hasAccess === 'true' && accessTime) {
+                    var timeDiff = Date.now() - parseInt(accessTime);
+                    var hoursDiff = timeDiff / (1000 * 60 * 60);
+                    isValidAccess = hoursDiff < 24;
+                }
+                
+                if (!isValidAccess && (!modal || modal.style.display === 'none' || modal.classList.contains('hidden'))) {
+                    console.log('🚨 NUCLEAR OPTION: Modal tampered with - blocking page');
+                    document.body.innerHTML = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:red;display:flex;align-items:center;justify-content:center;font-size:24px;z-index:999999;">🚨 SECURITY BREACH DETECTED 🚨<br>Page access blocked</div>';
+                }
+            }, 2000);
             
             // ALWAYS set up event listeners - modal is always visible for security
             var submitBtn = document.getElementById('submitPassword');

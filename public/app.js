@@ -5,13 +5,16 @@ let socket = null;
 if (typeof io !== 'undefined') {
     try {
         socket = io();
+        window.socket = socket; // Make globally accessible
         console.log('🔒 Socket.IO connected');
     } catch (error) {
         console.log('🔒 Socket.IO error:', error);
         socket = null;
+        window.socket = null;
     }
 } else {
     console.log('🔒 Socket.IO not available - running in offline mode');
+    window.socket = null;
 }
 
 // Global variables
@@ -933,9 +936,9 @@ function connectToServer() {
         // Accept plain text messages (fallback mode)
         socket.on('message', (data) => {
             console.log('📥 Received plain text message:', data);
-            if (data.username !== randomUsername) {
-                addMessage(data.message, data.username);
-            }
+            console.log('📥 My username:', randomUsername, 'Message from:', data.username);
+            // Show ALL messages from other users (don't filter by username)
+            addMessage(data.message, data.username);
         });
         
         // Listen for chat history when first connecting
@@ -944,9 +947,8 @@ function connectToServer() {
             if (messages && messages.length > 0) {
                 addMessage(`--- Recent messages (${messages.length}) ---`, 'System');
                 messages.forEach(msg => {
-                    if (msg.username !== randomUsername) {
-                        addMessage(msg.message, msg.username);
-                    }
+                    // Show ALL messages from chat history
+                    addMessage(msg.message, msg.username);
                 });
                 addMessage('--- End of recent messages ---', 'System');
             }
