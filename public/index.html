@@ -334,15 +334,10 @@
     </div>
 
     <script>
-        // SET USERNAME IMMEDIATELY - BEFORE ANYTHING ELSE
+        // SET UNIQUE USERNAME FOR EACH TAB
         if (!window.randomUsername) {
-            var storedUsername = localStorage.getItem('userRandomUsername');
-            if (storedUsername) {
-                window.randomUsername = storedUsername;
-            } else {
-                window.randomUsername = 'AnonymousUser' + Math.floor(Math.random() * 9999);
-                localStorage.setItem('userRandomUsername', window.randomUsername);
-            }
+            var tabId = Math.floor(Math.random() * 999999);
+            window.randomUsername = 'AnonymousUser' + tabId;
         }
         
         // SIMPLE PASSWORD CHECK - JUST WORKS
@@ -653,7 +648,7 @@
                 messages.forEach(function(msg) {
                     if (msg.timestamp > parseInt(lastMessageTime)) {
                         // Only show messages from OTHER users, not yourself
-                        if (msg.username !== currentUsername) {
+                        if (msg.username && msg.username !== currentUsername) {
                             var messageEl = document.createElement('div');
                             messageEl.className = 'message';
                             messageEl.innerHTML = '<strong>' + msg.username + ':</strong> ' + msg.message;
