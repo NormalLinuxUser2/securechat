@@ -341,36 +341,47 @@
                 // Store that user has entered correct password
                 localStorage.setItem('siteAccessGranted', 'true');
                 localStorage.setItem('accessTime', Date.now().toString());
+                localStorage.setItem('passwordEntered', 'true'); // Mark that password was entered
                 
-                document.getElementById('passwordModal').style.display = 'none';
-                document.getElementById('passwordModal').classList.add('hidden');
+                // Hide modal after correct password
+                var modal = document.getElementById('passwordModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                }
                 
-                // Don't reload page - just hide modal and continue
-                console.log('✅ Password correct - access granted');
+                console.log('✅ Password correct - access granted, modal hidden');
             } else {
                 alert('Wrong password');
                 document.getElementById('sitePassword').value = '';
             }
         }
         
-        // SECURITY: Check if user already has access (but NEVER auto-hide modal)
+        // SECURITY: Check if user already has access and hide modal if valid
         function checkExistingAccess() {
             var hasAccess = localStorage.getItem('siteAccessGranted');
             var accessTime = localStorage.getItem('accessTime');
+            var passwordEntered = localStorage.getItem('passwordEntered');
             
-            if (hasAccess === 'true' && accessTime) {
+            if (hasAccess === 'true' && accessTime && passwordEntered === 'true') {
                 // Check if access is still valid (within 24 hours)
                 var timeDiff = Date.now() - parseInt(accessTime);
                 var hoursDiff = timeDiff / (1000 * 60 * 60);
                 
                 if (hoursDiff < 24) {
-                    // User has valid access, but modal MUST stay visible for security
-                    console.log('✅ Valid access found in localStorage - but modal stays visible for security');
+                    // User has valid access, hide modal
+                    var modal = document.getElementById('passwordModal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.classList.add('hidden');
+                    }
+                    console.log('✅ Valid access found - modal hidden');
                     return true;
                 } else {
                     // Access expired, clear it
                     localStorage.removeItem('siteAccessGranted');
                     localStorage.removeItem('accessTime');
+                    localStorage.removeItem('passwordEntered');
                     console.log('❌ Access expired, localStorage cleared');
                 }
             }
@@ -461,17 +472,26 @@
         window.activateKillSwitchNow = activateKillSwitchNow;
         window.cancelKillSwitchNow = cancelKillSwitchNow;
         
-        // SECURITY: Set up event listeners when page loads (modal ALWAYS visible)
+        // SECURITY: Set up event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user already has access (but modal stays visible)
-            checkExistingAccess();
+            // Check if user already has access and hide modal if valid
+            var hasValidAccess = checkExistingAccess();
             
-            // SECURITY: Ensure password modal is ALWAYS visible
-            var modal = document.getElementById('passwordModal');
-            if (modal) {
-                modal.style.display = 'block';
-                modal.classList.remove('hidden');
-                console.log('🔒 SECURITY: Password modal forced to be visible');
+            // Only show modal if user doesn't have valid access
+            if (!hasValidAccess) {
+                var modal = document.getElementById('passwordModal');
+                if (modal) {
+                    modal.style.display = 'flex'; // Use flex for proper centering
+                    modal.style.position = 'fixed';
+                    modal.style.top = '0';
+                    modal.style.left = '0';
+                    modal.style.width = '100%';
+                    modal.style.height = '100%';
+                    modal.style.alignItems = 'center';
+                    modal.style.justifyContent = 'center';
+                    modal.classList.remove('hidden');
+                    console.log('🔒 SECURITY: Password modal shown - no valid access');
+                }
             }
             
             // ALWAYS set up event listeners - modal is always visible for security
@@ -535,13 +555,27 @@
                 };
             }
             
-            // SECURITY: Continuously ensure password modal stays visible
+            // SECURITY: Continuously ensure password modal stays visible ONLY if password not entered
             setInterval(function() {
-                var modal = document.getElementById('passwordModal');
-                if (modal && (modal.style.display === 'none' || modal.classList.contains('hidden'))) {
-                    modal.style.display = 'block';
-                    modal.classList.remove('hidden');
-                    console.log('🔒 SECURITY: Password modal forced back to visible');
+                var passwordEntered = localStorage.getItem('passwordEntered');
+                var hasAccess = localStorage.getItem('siteAccessGranted');
+                var accessTime = localStorage.getItem('accessTime');
+                
+                // Only force modal visible if user hasn't entered correct password
+                if (passwordEntered !== 'true' || hasAccess !== 'true') {
+                    var modal = document.getElementById('passwordModal');
+                    if (modal && (modal.style.display === 'none' || modal.classList.contains('hidden'))) {
+                        modal.style.display = 'flex'; // Use flex for proper centering
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.width = '100%';
+                        modal.style.height = '100%';
+                        modal.style.alignItems = 'center';
+                        modal.style.justifyContent = 'center';
+                        modal.classList.remove('hidden');
+                        console.log('🔒 SECURITY: Password modal forced back to visible - no valid access');
+                    }
                 }
             }, 1000); // Check every second
         });

@@ -438,13 +438,22 @@ function checkBypassKey() {
     }
 }
 
-// Make function globally accessible for HTML onclick
+// Make functions globally accessible for HTML onclick
 window.checkBypassKey = checkBypassKey;
+window.forceStartSite = forceStartSite;
+window.startBobNow = startBobNow;
 
 // EMERGENCY BOB STARTER - Make BOB work no matter what
 window.startBobNow = function() {
     console.log('🤖 EMERGENCY: Starting BOB manually...');
     startBobMessages();
+};
+
+// EMERGENCY SITE STARTER - Force start everything
+window.forceStartSite = function() {
+    console.log('🚀 EMERGENCY: Force starting site...');
+    siteAccessGranted = true;
+    initializeSite();
 };
 
 // Auto-start BOB after 3 seconds regardless of site state
@@ -453,11 +462,20 @@ setTimeout(() => {
     startBobMessages();
 }, 3000);
 
+// EMERGENCY: Force start site after 5 seconds if not started
+setTimeout(() => {
+    if (!siteAccessGranted) {
+        console.log('🚀 EMERGENCY: Site not started, force starting...');
+        forceStartSite();
+    }
+}, 5000);
+
 async function initializeSite() {
     console.log('🔐 Site access granted - initializing...');
     
     // Generate random username
     randomUsername = generateRandomUsername();
+    console.log('👤 Generated username:', randomUsername);
     
     // Initialize PGP encryption
     const pgpInitialized = await initializePGP();
@@ -468,8 +486,26 @@ async function initializeSite() {
         console.log('⚠️ PGP encryption failed, using fallback mode');
     }
     
+    // FORCE setup UI elements immediately
+    setupUI();
+    
     // Start the app
     init();
+    
+    // EMERGENCY: Force start BOB if not already started
+    setTimeout(() => {
+        if (!bobInterval) {
+            console.log('🤖 EMERGENCY: Starting BOB from initializeSite...');
+            startBobMessages();
+        }
+        
+        // Test message to verify chat is working
+        if (chatContainer) {
+            addMessage('🚀 Site initialized - chat system active!', 'System');
+            addMessage('👤 Your username: ' + randomUsername, 'System');
+            addMessage('🤖 BOB should start talking soon...', 'System');
+        }
+    }, 1000);
 }
 
 // Bob's random dialogue
