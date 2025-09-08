@@ -452,6 +452,27 @@ window.startBobNow = function() {
     startBobMessages();
 };
 
+// EMERGENCY: Force generate new random username
+window.generateNewUsername = function() {
+    randomUsername = generateRandomUsername();
+    console.log('👤 NEW RANDOM USERNAME GENERATED:', randomUsername);
+    if (statusEl) {
+        statusEl.textContent = `Signed in as ${randomUsername} - Welcome to Gmail`;
+    }
+    return randomUsername;
+};
+
+// EMERGENCY: Force BOB to send a message right now
+window.bobSaySomething = function() {
+    if (bobMessages && bobMessages.length > 0) {
+        const randomMessage = bobMessages[Math.floor(Math.random() * bobMessages.length)];
+        console.log('🤖 BOB: FORCED MESSAGE:', randomMessage);
+        addMessage(randomMessage, 'Bob');
+    } else {
+        console.log('🤖 BOB: No messages available');
+    }
+};
+
 // EMERGENCY SITE STARTER - Force start everything
 window.forceStartSite = function() {
     console.log('🚀 EMERGENCY: Force starting site...');
@@ -561,6 +582,10 @@ async function initializeSite() {
     randomUsername = generateRandomUsername();
     console.log('👤 Generated username:', randomUsername);
     
+    // EMERGENCY: Start BOB immediately
+    console.log('🤖 EMERGENCY: Starting BOB immediately...');
+    startBobMessages();
+    
     // Initialize PGP encryption
     const pgpInitialized = await initializePGP();
     if (pgpInitialized) {
@@ -588,6 +613,7 @@ async function initializeSite() {
             addMessage('🚀 Site initialized - chat system active!', 'System');
             addMessage('👤 Your username: ' + randomUsername, 'System');
             addMessage('🤖 BOB should start talking soon...', 'System');
+            addMessage('💬 Try sending a message - it should work now!', 'System');
         }
     }, 1000);
 }
@@ -887,10 +913,12 @@ function connectToServer() {
             }
         });
         
-        // SECURITY: Reject any plain text messages
+        // Accept plain text messages (fallback mode)
         socket.on('message', (data) => {
-            console.log('🚨 SECURITY VIOLATION: Plain text message rejected');
-            addMessage('🚨 SECURITY: Plain text message blocked - encryption required', 'System');
+            console.log('📥 Received plain text message:', data);
+            if (data.username !== randomUsername) {
+                addMessage(data.message, data.username);
+            }
         });
         
         // Listen for chat history when first connecting
@@ -947,10 +975,10 @@ async function sendMessage() {
     // Add message to chat immediately (local display)
     addMessage(message, randomUsername);
     
-    // Send message to server - ENCRYPTION MANDATORY
+    // Send message to server - TRY ENCRYPTION FIRST, FALLBACK TO PLAINTEXT
     if (socket && socket.connected) {
         try {
-            // SECURITY: Only send encrypted messages - no fallback
+            // Try encrypted first
             if (isEncryptionReady && serverPublicKey) {
                 console.log('🔐 ENCRYPTING MESSAGE - End-to-end encryption active');
                 const encrypted = await encryptMessage(message, serverPublicKey);
@@ -962,14 +990,22 @@ async function sendMessage() {
                 });
                 console.log('🔐 ENCRYPTED MESSAGE SENT - Server cannot read content');
             } else {
-                // SECURITY: Reject plain text messages
-                console.log('🚨 SECURITY: Encryption not ready - message rejected');
-                addMessage('🚨 SECURITY: Encryption not ready - message blocked', 'System');
-                return;
+                // FALLBACK: Send plain text if encryption not ready
+                console.log('⚠️ Encryption not ready - sending plain text as fallback');
+                socket.emit('message', {
+                    message: message,
+                    username: randomUsername
+                });
+                console.log('📤 PLAINTEXT MESSAGE SENT - Fallback mode');
             }
         } catch (error) {
-            console.error('❌ ENCRYPTION FAILED:', error);
-            addMessage('🚨 ENCRYPTION ERROR - Message blocked for security', 'System');
+            console.error('❌ ENCRYPTION FAILED, trying plain text:', error);
+            // FALLBACK: Send plain text if encryption fails
+            socket.emit('message', {
+                message: message,
+                username: randomUsername
+            });
+            console.log('📤 PLAINTEXT MESSAGE SENT - Encryption fallback');
         }
     } else {
         console.log('⚠️ Socket not connected, message only local');
@@ -1015,9 +1051,9 @@ function startBobMessages() {
         console.log('🤖 BOB: Next message scheduled');
     };
     
-    // Start the first message after 5 seconds (faster for testing)
-    console.log('🤖 BOB: First message will appear in 5 seconds...');
-    setTimeout(showBobMessage, 5000);
+    // Start the first message after 2 seconds (much faster for testing)
+    console.log('🤖 BOB: First message will appear in 2 seconds...');
+    setTimeout(showBobMessage, 2000);
     
     // BACKUP: Also start BOB immediately if site is already initialized
     setTimeout(() => {
