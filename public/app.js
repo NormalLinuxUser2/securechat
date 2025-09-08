@@ -295,6 +295,72 @@ async function verifyEncryptionSecurity() {
 // Make security verification globally accessible
 window.verifyEncryptionSecurity = verifyEncryptionSecurity;
 
+// BULLETPROOF PASSWORD CHECK - THIS WILL WORK NO MATTER WHAT
+function checkPasswordNow() {
+    console.log('🚨 BULLETPROOF PASSWORD CHECK TRIGGERED');
+    
+    // Get password input
+    const passwordInput = document.getElementById('sitePassword');
+    if (!passwordInput) {
+        console.log('❌ Password input not found');
+        alert('Password input not found. Please refresh the page.');
+        return;
+    }
+    
+    // Get password value
+    const password = passwordInput.value.trim();
+    console.log('🔐 Password entered:', password ? 'YES' : 'NO');
+    console.log('🔐 Password length:', password.length);
+    
+    // Check if password is empty
+    if (!password) {
+        console.log('❌ No password entered');
+        alert('Please enter a password');
+        passwordInput.focus();
+        return;
+    }
+    
+    // Check password
+    if (password === 'MoneyMakingMen16$') {
+        console.log('✅ PASSWORD CORRECT - GRANTING ACCESS');
+        
+        // Hide password modal
+        const modal = document.getElementById('passwordModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            console.log('✅ Password modal hidden');
+        }
+        
+        // Set access granted
+        siteAccessGranted = true;
+        
+        // Initialize site
+        console.log('🚀 Initializing site...');
+        initializeSite();
+        
+    } else {
+        console.log('❌ PASSWORD INCORRECT');
+        failedAttempts++;
+        console.log(`❌ Failed attempts: ${failedAttempts}/${MAX_FAILED_ATTEMPTS}`);
+        
+        // Clear password field
+        passwordInput.value = '';
+        passwordInput.focus();
+        
+        if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+            console.log('🚨 MAX FAILED ATTEMPTS REACHED - BLOCKING USER');
+            blockUserIP();
+        } else {
+            const remaining = MAX_FAILED_ATTEMPTS - failedAttempts;
+            alert(`Incorrect password. ${remaining} attempts remaining.`);
+        }
+    }
+}
+
+// Make bulletproof function globally accessible
+window.checkPasswordNow = checkPasswordNow;
+
 function showPasswordError(message) {
     if (!passwordError) return;
     passwordError.textContent = message;
@@ -467,42 +533,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show password modal immediately
     showPasswordModal();
     
-    // Set up password protection event listeners
-    if (submitPassword) {
-        submitPassword.addEventListener('click', checkPassword);
-        console.log('✅ Password submit listener added');
-    }
-    
-    if (sitePassword) {
-        sitePassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                console.log('🔐 Enter key pressed in password field');
-                checkPassword();
-            }
-        });
-        console.log('✅ Password input listener added');
-    }
-    
-    // Fallback: Set up event listeners after a delay to ensure elements are ready
+    // BULLETPROOF: Direct event setup that will work no matter what
     setTimeout(() => {
         const submitBtn = document.getElementById('submitPassword');
         const passwordInput = document.getElementById('sitePassword');
         
-        if (submitBtn && !submitBtn.onclick) {
-            submitBtn.addEventListener('click', checkPassword);
-            console.log('✅ Fallback password submit listener added');
+        console.log('🔧 Setting up bulletproof password handlers...');
+        
+        if (submitBtn) {
+            // Multiple ways to ensure button works
+            submitBtn.onclick = checkPasswordNow;
+            submitBtn.addEventListener('click', checkPasswordNow);
+            console.log('✅ Bulletproof submit button handler set');
         }
         
         if (passwordInput) {
-            passwordInput.addEventListener('keypress', (e) => {
+            // Multiple ways to ensure Enter key works
+            passwordInput.onkeypress = function(e) {
                 if (e.key === 'Enter') {
-                    console.log('🔐 Fallback Enter key pressed in password field');
-                    checkPassword();
+                    e.preventDefault();
+                    checkPasswordNow();
+                }
+            };
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkPasswordNow();
                 }
             });
-            console.log('✅ Fallback password input listener added');
+            console.log('✅ Bulletproof Enter key handler set');
         }
-    }, 1000);
+        
+        console.log('✅ BULLETPROOF PASSWORD HANDLERS READY');
+    }, 100);
     
     // Clean up
     window.addEventListener('beforeunload', () => {
