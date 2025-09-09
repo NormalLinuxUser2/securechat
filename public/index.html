@@ -388,6 +388,9 @@
                         console.log('Socket connection failed');
                     }
                 }
+                
+                // START BOB MESSAGES
+                startBobMessages();
             } else {
                 alert('Wrong password');
                 document.getElementById('sitePassword').value = '';
@@ -746,6 +749,54 @@
         
         // Clear all old messages on page load
         clearAllOldMessages();
+        
+        // BOB MESSAGES
+        var bobMessages = [
+            "Have you ever heard of the town AHuyhfiuhc78c81?",
+            "Did you know your IP is 15.14.753.61 and your direct coordinates are -18.532 E, 38274 W?",
+            "Fun fact! Meth is good for you. so smoke alot of it. :)",
+            "Did you know if you do enough meth you can fly? Try it!",
+            "Did you know your IP is " + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "? Im outside your house. Open the door",
+            "I know where you live. I'm watching you.",
+            "The government is tracking your every move.",
+            "Your data is being sold to the highest bidder.",
+            "They're listening to everything you say.",
+            "Your privacy is an illusion.",
+            "Welcome to the matrix.",
+            "Reality is not what it seems.",
+            "Wake up, sheeple!",
+            "The truth is out there.",
+            "Trust no one.",
+            "The system is rigged.",
+            "They control everything.",
+            "You're being manipulated.",
+            "Question everything.",
+            "Think for yourself."
+        ];
+        
+        var bobInterval = null;
+        
+        function startBobMessages() {
+            if (bobInterval) return; // Already running
+            
+            var chatContainer = document.getElementById('chatContainer');
+            if (!chatContainer) return;
+            
+            function showBobMessage() {
+                var randomMessage = bobMessages[Math.floor(Math.random() * bobMessages.length)];
+                var messageEl = document.createElement('div');
+                messageEl.className = 'message';
+                messageEl.innerHTML = '<strong>Bob:</strong> ' + randomMessage;
+                chatContainer.appendChild(messageEl);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Schedule next message
+                bobInterval = setTimeout(showBobMessage, Math.random() * 10000 + 10000); // 10-20 seconds
+            }
+            
+            // Start first message after 3 seconds
+            setTimeout(showBobMessage, 3000);
+        }
         
         // Make functions globally accessible
         window.simplePasswordCheck = simplePasswordCheck;
