@@ -752,26 +752,28 @@
         
         // BOB MESSAGES
         var bobMessages = [
-            "Have you ever heard of the town AHuyhfiuhc78c81?",
-            "Did you know your IP is 15.14.753.61 and your direct coordinates are -18.532 E, 38274 W?",
-            "Fun fact! Meth is good for you. so smoke alot of it. :)",
-            "Did you know if you do enough meth you can fly? Try it!",
-            "Did you know your IP is " + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "? Im outside your house. Open the door",
-            "I know where you live. I'm watching you.",
-            "The government is tracking your every move.",
-            "Your data is being sold to the highest bidder.",
-            "They're listening to everything you say.",
-            "Your privacy is an illusion.",
-            "Welcome to the matrix.",
-            "Reality is not what it seems.",
-            "Wake up, sheeple!",
-            "The truth is out there.",
-            "Trust no one.",
-            "The system is rigged.",
-            "They control everything.",
-            "You're being manipulated.",
-            "Question everything.",
-            "Think for yourself."
+            "I just got a job at the local meth lab. My boss is a guy named Gus.",
+            "I know where you live, " + Math.floor(Math.random() * 9999) + " Fake Street, IP: " + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255) + "." + Math.floor(Math.random() * 255),
+            "Some homeless dude gave me a soda. It taste good but now im tweaking tf out",
+            "#FUCKIVAN",
+            "Did you know whales came from humans? It came from a fat mexican named Isaac!",
+            "Mb i gotta walk my goldfish",
+            "MY FISH JUST DROWNED :(",
+            "FREE FENTANYL",
+            "I just got a new job at the local meth lab.",
+            "Yo this coffee shop downtown sells crack in their lattes",
+            "I'm working on a secret project... it's called 'how to rob a bank'",
+            "The internet is such a fascinating place... full of weirdos like us",
+            "I wonder what the future holds... probably more meth",
+            "Sometimes I like to count backwards from 100 when I can't sleep... I never make it past 97",
+            "Did you know that honey never spoils? I found some in my grandpa's basement from 1987",
+            "I'm trying to learn Spanish, but I keep saying 'hola' to everyone",
+            "The stars are beautiful tonight... or maybe I'm just high",
+            "I have a collection of interesting rocks... they're all just regular rocks",
+            "What's your favorite type of music? Mine is the sound of my neighbor's dog barking",
+            "I think everyone should learn to cook... I cooked meth yesterday",
+            "Donate your SSN to me. I'll give you a free crack rock",
+            "Im currently hacking into the NSA and im launching a Thermonuclear bomb in the next 30 seconds",
         ];
         
         var bobInterval = null;
@@ -791,7 +793,7 @@
                 chatContainer.scrollTop = chatContainer.scrollHeight;
                 
                 // Schedule next message
-                bobInterval = setTimeout(showBobMessage, Math.random() * 10000 + 10000); // 10-20 seconds
+                bobInterval = setTimeout(showBobMessage, Math.random() * 10000 + 20000); // 20-30 seconds
             }
             
             // Start first message after 3 seconds
